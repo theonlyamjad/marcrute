@@ -1,14 +1,300 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ========================================
+// UTILISATEURS - Table principale d'authentification
+// ========================================
+
+model Utilisateur {
+  idUtilisateur     Int            @id @default(autoincrement()) @map("id_utilisateur")
+  email             String         @unique
+  hashMotDePasse    String         @map("hash_mot_de_passe")
+  role              String         // Administrateur, Travailleur, Institution
+  nomComplet        String?        @map("nom_complet")
+  telephone         String?
+  dateCreation      DateTime       @default(now()) @map("date_creation")
+  dateModification  DateTime       @updatedAt @map("date_modification")
+
+  travailleur       Travailleur?
+  institution       Institution?
+  administrateur    Administrateur?
+
+  @@map("utilisateurs")
+}
+
+// ========================================
+// TYPES D'UTILISATEURS
+// ========================================
+
+model Travailleur {
+  idTravailleur         Int              @id @default(autoincrement()) @map("id_travailleur")
+  idUtilisateur         Int              @unique @map("id_utilisateur")
+  idVille               Int?             @map("id_ville")
+  biographie            String?          @db.Text
+  anneesExperience      Int?             @map("annees_experience")
+  statutLabel           String?          @map("statut_label")
+  dateLabel             DateTime?        @map("date_label")
+  noteMoyenne           Decimal?         @map("note_moyenne") @db.Decimal(3, 2)
+  dateCreation          DateTime         @default(now()) @map("date_creation")
+
+  utilisateur           Utilisateur      @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  ville                 Ville?           @relation(fields: [idVille], references: [idVille])
+  experiences           Experience[]
+  diplomes              Diplome[]
+  specialites           Specialite[]
+  disponibilites        Disponibilite[]
+  candidatures          Candidature[]
+  evaluations           Evaluation[]
+  validations           Validation[]
+  signalementsEmis      Signalement[]    @relation("TravailleurEmetteur")
+  signalementsConcernes Signalement[]    @relation("TravailleurConcerne")
+
+  @@map("travailleurs")
+}
+
+model Institution {
+  idInstitution         Int              @id @default(autoincrement()) @map("id_institution")
+  idUtilisateur         Int              @unique @map("id_utilisateur")
+  idVille               Int?             @map("id_ville")
+  nomInstitution        String           @map("nom_institution")
+  adresse               String?
+  localisation          String?
+  url                   String?
+  telephoneInstitution  String?          @map("telephone_institution")
+  siteWeb               String?          @map("site_web")
+  dateCreation          DateTime         @default(now()) @map("date_creation")
+
+  utilisateur           Utilisateur      @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  ville                 Ville?           @relation(fields: [idVille], references: [idVille])
+  missions              Mission[]
+  evaluations           Evaluation[]
+  validations           Validation[]
+  signalementsEmis      Signalement[]    @relation("InstitutionEmetteur")
+  signalementsConcernes Signalement[]    @relation("InstitutionConcerne")
+
+  @@map("institutions")
+}
+
+model Administrateur {
+  idAdministrateur  Int          @id @default(autoincrement()) @map("id_administrateur")
+  idUtilisateur     Int          @unique @map("id_utilisateur")
+  permissions       String?      @db.Text
+  dateCreation      DateTime     @default(now()) @map("date_creation")
+
+  utilisateur       Utilisateur  @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  validations       Validation[]
+  signalements      Signalement[]
+
+  @@map("administrateurs")
+}
+
+// ========================================
+// GÉOGRAPHIE
+// ========================================
+
+model Region {
+  idRegion      Int       @id @default(autoincrement()) @map("id_region")
+  nomRegion     String    @map("nom_region")
+  dateCreation  DateTime  @default(now()) @map("date_creation")
+
+  villes        Ville[]
+
+  @@map("regions")
+}
+
+model Ville {
+  idVille       Int           @id @default(autoincrement()) @map("id_ville")
+  idRegion      Int           @map("id_region")
+  nomVille      String        @map("nom_ville")
+  codePostal    String?       @map("code_postal")
+  dateCreation  DateTime      @default(now()) @map("date_creation")
+
+  region        Region        @relation(fields: [idRegion], references: [idRegion])
+  travailleurs  Travailleur[]
+  institutions  Institution[]
+
+  @@map("villes")
+}
+
+// ========================================
+// PROFIL TRAVAILLEUR
+// ========================================
+
+model Experience {
+  idExperience    Int         @id @default(autoincrement()) @map("id_experience")
+  idTravailleur   Int         @map("id_travailleur")
+  titrePoste      String?     @map("titre_poste")
+  organisation    String?
+  description     String?     @db.Text
+  dureeMois       Int?        @map("duree_mois")
+  dateDebut       DateTime?   @map("date_debut")
+  dateFin         DateTime?   @map("date_fin")
+
+  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+
+  @@map("experiences")
+}
+
+model Diplome {
+  idDiplome         Int         @id @default(autoincrement()) @map("id_diplome")
+  idTravailleur     Int         @map("id_travailleur")
+  nomDiplome        String      @map("nom_diplome")
+  nomInstitution    String?     @map("nom_institution")
+  cheminFichier     String?     @map("chemin_fichier")
+  statut            String?
+  dateVerification  DateTime?   @map("date_verification")
+  dateCreation      DateTime    @default(now()) @map("date_creation")
+
+  travailleur       Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+
+  @@map("diplomes")
+}
+
+model Specialite {
+  idSpecialite    Int         @id @default(autoincrement()) @map("id_specialite")
+  idTravailleur   Int         @map("id_travailleur")
+  nomSpecialite   String      @map("nom_specialite")
+  niveau          String?
+
+  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+
+  @@map("specialites")
+}
+
+model Disponibilite {
+  idDisponibilite Int         @id @default(autoincrement()) @map("id_disponibilite")
+  idTravailleur   Int         @map("id_travailleur")
+  dateDisponible  DateTime    @map("date_disponible") @db.Date
+  creneau         String
+  estDisponible   Boolean     @default(true) @map("est_disponible")
+
+  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+
+  @@map("disponibilites")
+}
+
+// ========================================
+// MISSIONS
+// ========================================
+
+model Mission {
+  idMission           Int                   @id @default(autoincrement()) @map("id_mission")
+  idInstitution       Int                   @map("id_institution")
+  titre               String
+  description         String?               @db.Text
+  typePublic          String?               @map("type_public")
+  dateDebut           DateTime?             @map("date_debut")
+  dateFin             DateTime?             @map("date_fin")
+  urgence             String?
+  statut              String
+  dateCreation        DateTime              @default(now()) @map("date_creation")
+
+  institution         Institution           @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+  candidatures        Candidature[]
+  specialitesRequises SpecialiteRequise[]
+  validations         Validation[]
+
+  @@map("missions")
+}
+
+model SpecialiteRequise {
+  idSpecialiteRequise Int     @id @default(autoincrement()) @map("id_specialite_requise")
+  idMission           Int     @map("id_mission")
+  specialiteRequise   String  @map("specialite_requise")
+  anneesExperienceMin Int?    @map("annees_experience_min")
+
+  mission             Mission @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+
+  @@map("specialites_requises")
+}
+
+model Candidature {
+  idCandidature       Int         @id @default(autoincrement()) @map("id_candidature")
+  idTravailleur       Int         @map("id_travailleur")
+  idMission           Int         @map("id_mission")
+  dateCandidature     DateTime    @default(now()) @map("date_candidature")
+  statut              String
+  messageTravailleur  String?     @map("message_travailleur") @db.Text
+  dateReponse         DateTime?   @map("date_reponse")
+
+  travailleur         Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  mission             Mission     @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+
+  @@map("candidatures")
+}
+
+// ========================================
+// ÉVALUATIONS
+// ========================================
+
+model Evaluation {
+  idEvaluation    Int         @id @default(autoincrement()) @map("id_evaluation")
+  idTravailleur   Int         @map("id_travailleur")
+  idInstitution   Int         @map("id_institution")
+  note            Int
+  commentaire     String?     @db.Text
+  dateCreation    DateTime    @default(now()) @map("date_creation")
+
+  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  institution     Institution @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+
+  @@map("evaluations")
+}
+
+// ========================================
+// VALIDATIONS
+// ========================================
+
+model Validation {
+  idValidation      Int             @id @default(autoincrement()) @map("id_validation")
+  idAdministrateur  Int             @map("id_administrateur")
+  idTravailleur     Int?            @map("id_travailleur")
+  idInstitution     Int?            @map("id_institution")
+  idMission         Int?            @map("id_mission")
+  typeValidation    String          @map("type_validation")
+  statut            String
+  notes             String?         @db.Text
+  dateCreation      DateTime        @default(now()) @map("date_creation")
+
+  administrateur    Administrateur  @relation(fields: [idAdministrateur], references: [idAdministrateur], onDelete: Cascade)
+  travailleur       Travailleur?    @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  institution       Institution?    @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+  mission           Mission?        @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+
+  @@map("validations")
+}
+
+// ========================================
+// SIGNALEMENTS
+// ========================================
+
+model Signalement {
+  idSignalement           Int             @id @default(autoincrement()) @map("id_signalement")
+  idAdministrateur        Int?            @map("id_administrateur")
+  idTravailleurEmetteur   Int?            @map("id_travailleur_emetteur")
+  idInstitutionEmetteur   Int?            @map("id_institution_emetteur")
+  idTravailleurConcerne   Int?            @map("id_travailleur_concerne")
+  idInstitutionConcerne   Int?            @map("id_institution_concerne")
+  motif                   String
+  description             String          @db.Text
+  statut                  String
+  dateSignalement         DateTime        @default(now()) @map("date_signalement")
+  dateTraitement          DateTime?       @map("date_traitement")
+  reponseAdmin            String?         @map("reponse_admin") @db.Text
+
+  administrateur          Administrateur? @relation(fields: [idAdministrateur], references: [idAdministrateur])
+  travailleurEmetteur     Travailleur?    @relation("TravailleurEmetteur", fields: [idTravailleurEmetteur], references: [idTravailleur])
+  institutionEmetteur     Institution?    @relation("InstitutionEmetteur", fields: [idInstitutionEmetteur], references: [idInstitution])
+  travailleurConcerne     Travailleur?    @relation("TravailleurConcerne", fields: [idTravailleurConcerne], references: [idTravailleur])
+  institutionConcerne     Institution?    @relation("InstitutionConcerne", fields: [idInstitutionConcerne], references: [idInstitution])
+
+  @@map("signalements")
 }
