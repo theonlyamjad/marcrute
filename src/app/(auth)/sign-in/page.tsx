@@ -53,7 +53,7 @@ const SignInPage = () => {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
+          <div className="w-full max-w-lg">
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
               <div className="flex flex-col items-center gap-1 text-center">
                 <h1 className="text-2xl font-bold">Connexion à votre compte</h1>
