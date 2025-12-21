@@ -1,110 +1,137 @@
 "use client"
+import React, { useState } from "react"
+import Link from "next/link"
+import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
-import OAuth from '@/components/Form/OAuth';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { useState } from 'react'
+import OAuth from '@/components/Form/OAuth'
+import { Button } from '@/components/ui/button'
+import { Users, TrendingUp, Shield } from "lucide-react"
+
+const dancingScript = Dancing_Script({
+  variable: "--font-dancing-script",
+  subsets: ["latin"],
+  weight: ["400", "700"]
+})
 
 const SignupPage = () => {
-  const [formData,setFormData]=useState({
-    email:"",
-    password:"",
-    confirmPassword:""
-  });
+  const [formData, setFormData] = useState({
+    companyName: "",
+    email: "",
+    password: ""
+  })
 
-  const [errformData,seterrFormData]=useState({
-    email:"",
-    password:"",
-    confirmPassword:""
-  });
+  const [errformData, seterrFormData] = useState({
+    companyName: "",
+    email: "",
+    password: ""
+  })
 
-  const handleChange = (e:React.ChangeEvent<HTMLInputElement>)=>{
-    const {id,value} = e.target;
-    setFormData((prev)=>({
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target
+    setFormData((prev) => ({
       ...prev,
-      [id]:value
+      [id]: value
     }))
-  };
+  }
 
-  const handleFocus = (value:string)=>{
-    seterrFormData((prev)=>({
+  const handleFocus = (value: string) => {
+    seterrFormData((prev) => ({
       ...prev,
-      [value]:""
+      [value]: ""
     }))
-  };
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log("Sign up:", formData)
+  }
 
   return (
-    <div className='flex items-center justify-between w-full min-h-dvh'>
-      <div className='w-full p-4 space-y-2'>
-        <div className='w-full space-y-2'>
-          <h1>MARcrute LoOGO</h1>
-          <h1 className='text-gray-800 text-2xl font-bold'>Je crée mon compte</h1>
-            <p className="text-sm text-gray-500">
-              Déjà inscrit ?{" "}
-              <Link href="/" className="font-semibold text-cyan-700 hover:underline">
-                Connectez-vous
-              </Link>
-            </p>          
-          <OAuth text_1='Sinscrire avec Google' text_2='Sinscrire avec Microsoft'/>
+    <div className="grid min-h-svh lg:grid-cols-2">
+      <div className="flex flex-col gap-4 p-6 md:p-10">
+        <div className="flex justify-center gap-2 md:justify-start">
+          <Link href="/" className="flex items-center gap-2 font-black">
+            MARcrute
+          </Link>
         </div>
-        <form className='w-full flex items-center justify-center flex-col space-y-2'>
-        <InputForm 
-          id='email' 
-          label='Email'
-          placeholder='Tapez votre email'
-          type='email'
-          value={formData.email}
-          onChange={handleChange}
-          icon='mail'
-          onFocus={()=>handleFocus("email")}
-        />
-        <InputForm 
-          id='password' 
-          label='Mot de passe'
-          placeholder='******'
-          type='password'
-          value={formData.password}
-          onChange={handleChange}
-          icon='lock'
-          onFocus={()=>handleFocus("password")}
-        />
-        <InputForm 
-          id='confirmPassword' 
-          label='Comfirmer votre Mot de passe'
-          placeholder='Confirmer le mot de passe'
-          type='password'
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          icon='lock'
-          onFocus={()=>handleFocus("confirmPassword")}
-        />
-        <Button className="mt-2 w-full bg-gray-900 py-5 text-base font-semibold hover:bg-gray-800 cursor-pointer">
-              Créer mon compte
-        </Button>        
-      </form> 
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-lg">
+            <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+              <div className="flex flex-col items-center gap-1 text-center">
+                <h1 className="text-2xl font-bold">Créer un compte entreprise</h1>
+              </div>
+              
+              <div className="flex flex-col gap-4">
+                <InputForm 
+                  id="companyName" 
+                  label="Nom de l'entreprise"
+                  placeholder="Nom de votre entreprise"
+                  type="text"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  onFocus={() => handleFocus("companyName")}
+                  error={errformData.companyName}
+                />
+
+                <InputForm 
+                  id="email" 
+                  label="Email"
+                  placeholder="exemple@entreprise.com"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  icon="mail"
+                  onFocus={() => handleFocus("email")}
+                  error={errformData.email}
+                />
+                
+                <InputForm 
+                  id="password" 
+                  label="Mot de passe"
+                  placeholder="******"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  icon="lock"
+                  onFocus={() => handleFocus("password")}
+                  error={errformData.password}
+                />
+                
+                <Button type="submit" className="w-full cursor-pointer">
+                  Créer mon compte entreprise
+                </Button>
+                
+                <OAuth text_1="S'inscrire avec Google" text_2="S'inscrire avec Microsoft" />
+                
+                <p className="text-center text-sm">
+                  Déjà inscrit ?{" "}
+                  <Link href="/enterprise/sign-in" className="underline underline-offset-4">
+                    Connectez-vous
+                  </Link>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-      <div className='w-full bg-cyan-500 min-h-dvh hidden lg:flex items-center justify-center'>
-        <div className='mt-9 p-4 flex items-center flex-col max-w-full justify-between space-y-8'>
-          <div className='p-2 rounded-md text-2xl bg-gray-50 font-bold w-full'>
-            <h1>MARcrute est 100 % Marocaine</h1>
-          </div>
-          <div className='p-2 rounded-md bg-cyan-300 w-full mt-4 text-xl -rotate-3'>
-            <h2>✓ +300 000 Free-Workers actifs</h2>
-          </div>
-          <div className='p-2 rounded-md bg-cyan-300 w-full text-xl mt-4 rotate-3'>
-            <h2>✓ +300 000 Free-Workers actifs</h2>
-          </div>
-          <div className='p-2 rounded-md bg-cyan-300 w-full text-xl mt-4 -rotate-3'>
-            <h2>✓ +4 000 recruteurs spécialisés dans <br/>l’informatique</h2>
-          </div>
-          <div className='p-2 rounded-md bg-cyan-300 w-full text-xl mt-4 rotate-3'>
-            <h2>✓ Choisissez la visibilité de votre profil</h2>
-          </div>
-          <div className='p-2 rounded-md bg-cyan-300 w-full text-xl mt-4 -rotate-3'>
-            <h2>✓ Retrouvez la plus grosse communauté d’indépendants</h2>
-          </div>
-          <div className='p-2 rounded-md bg-cyan-300 w-full text-xl mt-4 rotate-3'>
-            <h2>✓ Suivez les dernières actualités tech</h2>
+      <div className="relative hidden lg:block bg-linear-to-br from-cyan-600 to-cyan-800 rounded-l-4xl">
+        <div className="flex gap-8 flex-col justify-center items-center h-full p-12">
+          <h2 className={`${dancingScript.className} text-white text-5xl font-bold text-center max-w-lg leading-tight`}>
+            Recrutez les meilleurs talents marocains
+          </h2>
+          <div className="text-white text-center space-y-4 max-w-md">
+            <div className="flex items-center gap-3 justify-center">
+              <Users className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Accédez à +300 000 freelancers qualifiés</p>
+            </div>
+            <div className="flex items-center gap-3 justify-center">
+              <TrendingUp className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Publication d'offres illimitée</p>
+            </div>
+            <div className="flex items-center gap-3 justify-center">
+              <Shield className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Gestion simplifiée des recrutements</p>
+            </div>
           </div>
         </div>
       </div>

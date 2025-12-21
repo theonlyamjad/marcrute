@@ -1,11 +1,11 @@
 "use client"
 import React, { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
+import { Users, TrendingUp, Shield } from "lucide-react"
 
 const dancingScript = Dancing_Script({
   variable: "--font-dancing-script",
@@ -103,7 +103,7 @@ const SignInPage = () => {
                 
                 <p className="text-center text-sm">
                   Vous n&apos;avez pas de compte?{" "}
-                  <Link href="/sign-up" className="underline underline-offset-4">
+                  <Link href="/enterprise/sign-up" className="underline underline-offset-4">
                     S&apos;inscrire
                   </Link>
                 </p>
@@ -112,18 +112,24 @@ const SignInPage = () => {
           </div>
         </div>
       </div>
-      <div className="relative hidden lg:block bg-black rounded-l-4xl">
-        <div className="flex gap-5 flex-col justify-center items-center h-full p-12">
+      <div className="relative hidden lg:block bg-linear-to-br from-cyan-600 to-cyan-800 rounded-l-4xl">
+        <div className="flex gap-8 flex-col justify-center items-center h-full p-12">
           <h2 className={`${dancingScript.className} text-white text-5xl font-bold text-center max-w-lg leading-tight`}>
-            Trouvez votre prochaine opportunité
+            Recrutez les meilleurs talents marocains
           </h2>
-          <div className="border-white border-4 rounded-lg">
-            <Image
-              src="/placeholder.svg"
-              alt="Placeholder"
-              width={400}
-              height={300}
-            />
+          <div className="text-white text-center space-y-4 max-w-md">
+            <div className="flex items-center gap-3 justify-center">
+              <Users className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Accédez à +300 000 freelancers qualifiés</p>
+            </div>
+            <div className="flex items-center gap-3 justify-center">
+              <TrendingUp className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Publication d'offres illimitée</p>
+            </div>
+            <div className="flex items-center gap-3 justify-center">
+              <Shield className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Gestion simplifiée des recrutements</p>
+            </div>
           </div>
         </div>
       </div>

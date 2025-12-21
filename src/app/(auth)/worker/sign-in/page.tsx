@@ -1,11 +1,11 @@
 "use client"
 import React, { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
+import { Briefcase, Building2, Sparkles } from "lucide-react"
 
 const dancingScript = Dancing_Script({
   variable: "--font-dancing-script",
@@ -103,7 +103,7 @@ const SignInPage = () => {
                 
                 <p className="text-center text-sm">
                   Vous n&apos;avez pas de compte?{" "}
-                  <Link href="/sign-up" className="underline underline-offset-4">
+                  <Link href="/worker/sign-up" className="underline underline-offset-4">
                     S&apos;inscrire
                   </Link>
                 </p>
@@ -112,18 +112,24 @@ const SignInPage = () => {
           </div>
         </div>
       </div>
-      <div className="relative hidden lg:block bg-black rounded-l-4xl">
-        <div className="flex gap-5 flex-col justify-center items-center h-full p-12">
+      <div className="relative hidden lg:block bg-linear-to-br from-purple-600 to-purple-800 rounded-l-4xl">
+        <div className="flex gap-8 flex-col justify-center items-center h-full p-12">
           <h2 className={`${dancingScript.className} text-white text-5xl font-bold text-center max-w-lg leading-tight`}>
-            Trouvez votre prochaine opportunité
+            Trouvez votre prochaine mission
           </h2>
-          <div className="border-white border-4 rounded-lg">
-            <Image
-              src="/placeholder.svg"
-              alt="Placeholder"
-              width={400}
-              height={300}
-            />
+          <div className="text-white text-center space-y-4 max-w-md">
+            <div className="flex items-center gap-3 justify-center">
+              <Sparkles className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Des milliers de missions disponibles</p>
+            </div>
+            <div className="flex items-center gap-3 justify-center">
+              <Building2 className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">Travaillez avec les meilleures entreprises</p>
+            </div>
+            <div className="flex items-center gap-3 justify-center">
+              <Briefcase className="w-6 h-6 shrink-0" />
+              <p className="text-lg font-semibold">100% gratuit pour les freelancers</p>
+            </div>
           </div>
         </div>
       </div>
