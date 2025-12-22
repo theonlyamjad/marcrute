@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+   url      = env("DATABASE_URL")
 }
 
 // ========================================
@@ -14,9 +15,10 @@ datasource db {
 // ========================================
 
 model Utilisateur {
-  idUtilisateur     Int            @id @default(autoincrement()) @map("id_utilisateur")
+  idUtilisateur     String         @id @default(cuid()) @map("id_utilisateur")
   email             String         @unique
-  hashMotDePasse    String         @map("hash_mot_de_passe")
+  emailVerified     DateTime?      @map("email_verified")
+  hashMotDePasse    String?        @map("hash_mot_de_passe") // Nullable for OAuth users
   role              String         // Administrateur, Travailleur, Institution
   nomComplet        String?        @map("nom_complet")
   telephone         String?
@@ -26,8 +28,56 @@ model Utilisateur {
   travailleur       Travailleur?
   institution       Institution?
   administrateur    Administrateur?
+  
+  // Auth.js required relations
+  accounts          Account[]
+  sessions          Session[]
 
   @@map("utilisateurs")
+}
+
+// ========================================
+// AUTH.JS REQUIRED MODELS
+// ========================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user Utilisateur @relation(fields: [userId], references: [idUtilisateur], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String      @id @default(cuid())
+  sessionToken String      @unique @map("session_token")
+  userId       String      @map("user_id")
+  expires      DateTime
+  
+  user Utilisateur @relation(fields: [userId], references: [idUtilisateur], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 // ========================================
@@ -35,9 +85,9 @@ model Utilisateur {
 // ========================================
 
 model Travailleur {
-  idTravailleur         Int              @id @default(autoincrement()) @map("id_travailleur")
-  idUtilisateur         Int              @unique @map("id_utilisateur")
-  idVille               Int?             @map("id_ville")
+  idTravailleur         String           @id @default(cuid()) @map("id_travailleur")
+  idUtilisateur         String           @unique @map("id_utilisateur")
+  idVille               String?          @map("id_ville")
   biographie            String?          @db.Text
   anneesExperience      Int?             @map("annees_experience")
   statutLabel           String?          @map("statut_label")
@@ -61,9 +111,9 @@ model Travailleur {
 }
 
 model Institution {
-  idInstitution         Int              @id @default(autoincrement()) @map("id_institution")
-  idUtilisateur         Int              @unique @map("id_utilisateur")
-  idVille               Int?             @map("id_ville")
+  idInstitution         String           @id @default(cuid()) @map("id_institution")
+  idUtilisateur         String           @unique @map("id_utilisateur")
+  idVille               String?          @map("id_ville")
   nomInstitution        String           @map("nom_institution")
   adresse               String?
   localisation          String?
@@ -84,8 +134,8 @@ model Institution {
 }
 
 model Administrateur {
-  idAdministrateur  Int          @id @default(autoincrement()) @map("id_administrateur")
-  idUtilisateur     Int          @unique @map("id_utilisateur")
+  idAdministrateur  String       @id @default(cuid()) @map("id_administrateur")
+  idUtilisateur     String       @unique @map("id_utilisateur")
   permissions       String?      @db.Text
   dateCreation      DateTime     @default(now()) @map("date_creation")
 
@@ -101,7 +151,7 @@ model Administrateur {
 // ========================================
 
 model Region {
-  idRegion      Int       @id @default(autoincrement()) @map("id_region")
+  idRegion      String    @id @default(cuid()) @map("id_region")
   nomRegion     String    @map("nom_region")
   dateCreation  DateTime  @default(now()) @map("date_creation")
 
@@ -111,8 +161,8 @@ model Region {
 }
 
 model Ville {
-  idVille       Int           @id @default(autoincrement()) @map("id_ville")
-  idRegion      Int           @map("id_region")
+  idVille       String        @id @default(cuid()) @map("id_ville")
+  idRegion      String        @map("id_region")
   nomVille      String        @map("nom_ville")
   codePostal    String?       @map("code_postal")
   dateCreation  DateTime      @default(now()) @map("date_creation")
@@ -129,8 +179,8 @@ model Ville {
 // ========================================
 
 model Experience {
-  idExperience    Int         @id @default(autoincrement()) @map("id_experience")
-  idTravailleur   Int         @map("id_travailleur")
+  idExperience    String      @id @default(cuid()) @map("id_experience")
+  idTravailleur   String      @map("id_travailleur")
   titrePoste      String?     @map("titre_poste")
   organisation    String?
   description     String?     @db.Text
@@ -144,8 +194,8 @@ model Experience {
 }
 
 model Diplome {
-  idDiplome         Int         @id @default(autoincrement()) @map("id_diplome")
-  idTravailleur     Int         @map("id_travailleur")
+  idDiplome         String      @id @default(cuid()) @map("id_diplome")
+  idTravailleur     String      @map("id_travailleur")
   nomDiplome        String      @map("nom_diplome")
   nomInstitution    String?     @map("nom_institution")
   cheminFichier     String?     @map("chemin_fichier")
@@ -159,8 +209,8 @@ model Diplome {
 }
 
 model Specialite {
-  idSpecialite    Int         @id @default(autoincrement()) @map("id_specialite")
-  idTravailleur   Int         @map("id_travailleur")
+  idSpecialite    String      @id @default(cuid()) @map("id_specialite")
+  idTravailleur   String      @map("id_travailleur")
   nomSpecialite   String      @map("nom_specialite")
   niveau          String?
 
@@ -170,8 +220,8 @@ model Specialite {
 }
 
 model Disponibilite {
-  idDisponibilite Int         @id @default(autoincrement()) @map("id_disponibilite")
-  idTravailleur   Int         @map("id_travailleur")
+  idDisponibilite String      @id @default(cuid()) @map("id_disponibilite")
+  idTravailleur   String      @map("id_travailleur")
   dateDisponible  DateTime    @map("date_disponible") @db.Date
   creneau         String
   estDisponible   Boolean     @default(true) @map("est_disponible")
@@ -186,8 +236,8 @@ model Disponibilite {
 // ========================================
 
 model Mission {
-  idMission           Int                   @id @default(autoincrement()) @map("id_mission")
-  idInstitution       Int                   @map("id_institution")
+  idMission           String                @id @default(cuid()) @map("id_mission")
+  idInstitution       String                @map("id_institution")
   titre               String
   description         String?               @db.Text
   typePublic          String?               @map("type_public")
@@ -206,8 +256,8 @@ model Mission {
 }
 
 model SpecialiteRequise {
-  idSpecialiteRequise Int     @id @default(autoincrement()) @map("id_specialite_requise")
-  idMission           Int     @map("id_mission")
+  idSpecialiteRequise String  @id @default(cuid()) @map("id_specialite_requise")
+  idMission           String  @map("id_mission")
   specialiteRequise   String  @map("specialite_requise")
   anneesExperienceMin Int?    @map("annees_experience_min")
 
@@ -217,9 +267,9 @@ model SpecialiteRequise {
 }
 
 model Candidature {
-  idCandidature       Int         @id @default(autoincrement()) @map("id_candidature")
-  idTravailleur       Int         @map("id_travailleur")
-  idMission           Int         @map("id_mission")
+  idCandidature       String      @id @default(cuid()) @map("id_candidature")
+  idTravailleur       String      @map("id_travailleur")
+  idMission           String      @map("id_mission")
   dateCandidature     DateTime    @default(now()) @map("date_candidature")
   statut              String
   messageTravailleur  String?     @map("message_travailleur") @db.Text
@@ -236,9 +286,9 @@ model Candidature {
 // ========================================
 
 model Evaluation {
-  idEvaluation    Int         @id @default(autoincrement()) @map("id_evaluation")
-  idTravailleur   Int         @map("id_travailleur")
-  idInstitution   Int         @map("id_institution")
+  idEvaluation    String      @id @default(cuid()) @map("id_evaluation")
+  idTravailleur   String      @map("id_travailleur")
+  idInstitution   String      @map("id_institution")
   note            Int
   commentaire     String?     @db.Text
   dateCreation    DateTime    @default(now()) @map("date_creation")
@@ -254,11 +304,11 @@ model Evaluation {
 // ========================================
 
 model Validation {
-  idValidation      Int             @id @default(autoincrement()) @map("id_validation")
-  idAdministrateur  Int             @map("id_administrateur")
-  idTravailleur     Int?            @map("id_travailleur")
-  idInstitution     Int?            @map("id_institution")
-  idMission         Int?            @map("id_mission")
+  idValidation      String          @id @default(cuid()) @map("id_validation")
+  idAdministrateur  String          @map("id_administrateur")
+  idTravailleur     String?         @map("id_travailleur")
+  idInstitution     String?         @map("id_institution")
+  idMission         String?         @map("id_mission")
   typeValidation    String          @map("type_validation")
   statut            String
   notes             String?         @db.Text
@@ -277,12 +327,12 @@ model Validation {
 // ========================================
 
 model Signalement {
-  idSignalement           Int             @id @default(autoincrement()) @map("id_signalement")
-  idAdministrateur        Int?            @map("id_administrateur")
-  idTravailleurEmetteur   Int?            @map("id_travailleur_emetteur")
-  idInstitutionEmetteur   Int?            @map("id_institution_emetteur")
-  idTravailleurConcerne   Int?            @map("id_travailleur_concerne")
-  idInstitutionConcerne   Int?            @map("id_institution_concerne")
+  idSignalement           String          @id @default(cuid()) @map("id_signalement")
+  idAdministrateur        String?         @map("id_administrateur")
+  idTravailleurEmetteur   String?         @map("id_travailleur_emetteur")
+  idInstitutionEmetteur   String?         @map("id_institution_emetteur")
+  idTravailleurConcerne   String?         @map("id_travailleur_concerne")
+  idInstitutionConcerne   String?         @map("id_institution_concerne")
   motif                   String
   description             String          @db.Text
   statut                  String
