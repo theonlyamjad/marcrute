@@ -44,9 +44,9 @@ export const authOptions = {
           throw new Error("Identifiants invalides");
         }
 
-        if (!user.emailVerified) {
-          throw new Error("Veuillez vérifier votre email avant de vous connecter");
-        }
+        // if (!user.emailVerified) {
+          // throw new Error("Veuillez vérifier votre email avant de vous connecter");
+        // }
 
         return {
           id: user.idUtilisateur,

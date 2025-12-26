@@ -1,11 +1,14 @@
 "use client"
 import React, { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
 import { Users, TrendingUp, Shield } from "lucide-react"
+import { signInAction } from "@/actions/auth/sign-in"
+import { signIn } from "next-auth/react"
 
 const dancingScript = Dancing_Script({
   variable: "--font-dancing-script",
@@ -14,6 +17,8 @@ const dancingScript = Dancing_Script({
 })
 
 const SignInPage = () => {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -39,9 +44,27 @@ const SignInPage = () => {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Sign in:", formData)
+    setIsLoading(true)
+    seterrFormData({ email: "", password: "" })
+
+    const result = await signInAction(formData.email, formData.password)
+
+    if (result?.error) {
+      seterrFormData({
+        email: result.error,
+        password: result.error
+      })
+      setIsLoading(false)
+    } else {
+      // Redirect to dashboard
+      router.push("/dashboard")
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    await signIn("google", { callbackUrl: "/dashboard" })
   }
 
   return (
@@ -95,11 +118,15 @@ const SignInPage = () => {
                   />
                 </div>
                 
-                <Button type="submit" className="w-full cursor-pointer">
-                  Connecter
+                <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
+                  {isLoading ? "Connexion..." : "Connecter"}
                 </Button>
                 
-                <OAuth text_1="Continuez avec Google" text_2="Continuez avec Microsoft" />
+                <OAuth 
+                  text_1="Continuez avec Google" 
+                  text_2="Continuez avec Microsoft"
+                  onGoogleClick={handleGoogleSignIn}
+                />
                 
                 <p className="text-center text-sm">
                   Vous n&apos;avez pas de compte?{" "}

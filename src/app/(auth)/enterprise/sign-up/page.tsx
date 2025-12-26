@@ -1,11 +1,14 @@
 "use client"
 import React, { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
 import { Users, TrendingUp, Shield } from "lucide-react"
+import { signUpEnterpriseAction } from "@/actions/auth/sign-up-enterprise"
+import { signIn } from "next-auth/react"
 
 const dancingScript = Dancing_Script({
   variable: "--font-dancing-script",
@@ -14,6 +17,8 @@ const dancingScript = Dancing_Script({
 })
 
 const SignupPage = () => {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     companyName: "",
     email: "",
@@ -41,9 +46,32 @@ const SignupPage = () => {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Sign up:", formData)
+    setIsLoading(true)
+    seterrFormData({ companyName: "", email: "", password: "" })
+
+    const result = await signUpEnterpriseAction(
+      formData.companyName,
+      formData.email,
+      formData.password
+    )
+
+    if (result?.error) {
+      seterrFormData({
+        companyName: "",
+        email: result.error,
+        password: ""
+      })
+      setIsLoading(false)
+    } else {
+      // Redirect to dashboard
+      router.push("/dashboard")
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    await signIn("google", { callbackUrl: "/dashboard" })
   }
 
   return (
@@ -97,11 +125,15 @@ const SignupPage = () => {
                   error={errformData.password}
                 />
                 
-                <Button type="submit" className="w-full cursor-pointer">
-                  Créer mon compte entreprise
+                <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
+                  {isLoading ? "Création..." : "Créer mon compte entreprise"}
                 </Button>
                 
-                <OAuth text_1="S'inscrire avec Google" text_2="S'inscrire avec Microsoft" />
+                <OAuth 
+                  text_1="S'inscrire avec Google" 
+                  text_2="S'inscrire avec Microsoft"
+                  onGoogleClick={handleGoogleSignIn}
+                />
                 
                 <p className="text-center text-sm">
                   Déjà inscrit ?{" "}
