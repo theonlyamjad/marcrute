@@ -40,7 +40,7 @@ export async function signUpEnterpriseAction(
       redirect: false,
     });
 
-    return { success: true };
+    return { success: true, redirectTo: "/enterprise/dashboard" };
   } catch (error) {
     console.error("Sign up error:", error);
     return { error: "Une erreur est survenue lors de l'inscription" };

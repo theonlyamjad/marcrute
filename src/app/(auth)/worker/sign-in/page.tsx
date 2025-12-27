@@ -58,8 +58,8 @@ const SignInPage = () => {
       })
       setIsLoading(false)
     } else {
-      // Redirect to dashboard
-      router.push("/dashboard")
+      // Redirect based on role
+      router.push(result.redirectTo || "/")
     }
   }
 

@@ -1,18 +1,22 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import type { Adapter } from "next-auth/adapters";
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     // Google OAuth Provider
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
+        }
+      }
     }),
     
     // Email/Password Provider
@@ -44,8 +48,9 @@ export const authOptions = {
           throw new Error("Identifiants invalides");
         }
 
+        // Email verification check disabled for now
         // if (!user.emailVerified) {
-          // throw new Error("Veuillez vérifier votre email avant de vous connecter");
+        //   throw new Error("Veuillez vérifier votre email avant de vous connecter");
         // }
 
         return {
@@ -59,25 +64,47 @@ export const authOptions = {
   ],
   
   callbacks: {
-    async signIn({ user, account }: any) {
+    async signIn({ user, account, profile }: any) {
       // For OAuth sign-in (Google)
       if (account?.provider === "google") {
-        const existingUser = await prisma.utilisateur.findUnique({
-          where: { email: user.email! },
-        });
-
-        // If user doesn't exist, they need to complete registration
-        if (!existingUser) {
-          // Store temporary data in session for sign-up completion
-          return `/auth/complete-signup?email=${user.email}&name=${user.name}&provider=google`;
-        }
-
-        // Auto-verify email for OAuth users
-        if (!existingUser.emailVerified) {
-          await prisma.utilisateur.update({
+        try {
+          const existingUser = await prisma.utilisateur.findUnique({
             where: { email: user.email! },
-            data: { emailVerified: new Date() },
           });
+
+          // If user doesn't exist, create them
+          if (!existingUser) {
+            const newUser = await prisma.utilisateur.create({
+              data: {
+                email: user.email!,
+                nomComplet: user.name || profile?.name || "Google User",
+                emailVerified: new Date(),
+                role: "Travailleur", // Default role for now
+                hashMotDePasse: null, // No password for OAuth users
+              },
+            });
+            
+            // Update user id for session
+            user.id = newUser.idUtilisateur;
+            
+            console.log("Created new Google user:", newUser.email);
+          } else {
+            // Update emailVerified if not set
+            if (!existingUser.emailVerified) {
+              await prisma.utilisateur.update({
+                where: { email: user.email! },
+                data: { emailVerified: new Date() },
+              });
+            }
+            
+            // Set user id for session
+            user.id = existingUser.idUtilisateur;
+          }
+          
+          return true;
+        } catch (error) {
+          console.error("Google sign-in error:", error);
+          return false;
         }
       }
 
@@ -107,20 +134,36 @@ export const authOptions = {
       return session;
     },
 
-    async jwt({ token, user }: any) {
+    async jwt({ token, user, account }: any) {
+      // On sign in
       if (user) {
+        token.id = user.id;
         token.role = user.role;
       }
+      
+      // For OAuth, get the user ID
+      if (account?.provider === "google" && user?.email) {
+        const dbUser = await prisma.utilisateur.findUnique({
+          where: { email: user.email },
+          select: { idUtilisateur: true, role: true }
+        });
+        
+        if (dbUser) {
+          token.sub = dbUser.idUtilisateur;
+          token.role = dbUser.role;
+        }
+      }
+      
       return token;
     },
     
     async redirect({ url, baseUrl }: any) {
-      // After successful login, redirect based on role
+      // If url is provided and starts with base URL, use it
       if (url.startsWith(baseUrl)) {
         return url;
       }
       
-      // Default redirect to dashboard
+      // Always redirect to dashboard after authentication
       return `${baseUrl}/dashboard`;
     },
   },

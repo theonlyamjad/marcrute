@@ -1,6 +1,6 @@
 "use server"
 
-import { signIn } from "@/app/api/auth/[...nextauth]/route";
+import { signIn, auth } from "@/app/api/auth/[...nextauth]/route";
 import { AuthError } from "next-auth";
 
 export async function signInAction(email: string, password: string) {
@@ -11,7 +11,16 @@ export async function signInAction(email: string, password: string) {
       redirect: false,
     });
 
-    return { success: true };
+    // Get session to determine redirect based on role
+    const session = await auth();
+    
+    if (session?.user?.role === "Travailleur") {
+      return { success: true, redirectTo: "/worker/dashboard" };
+    } else if (session?.user?.role === "Institution") {
+      return { success: true, redirectTo: "/enterprise/dashboard" };
+    }
+
+    return { success: true, redirectTo: "/" };
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
