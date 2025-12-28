@@ -19,6 +19,8 @@ const dancingScript = Dancing_Script({
 const SignupPage = () => {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
@@ -52,6 +54,7 @@ const SignupPage = () => {
     e.preventDefault()
     setIsLoading(true)
     seterrFormData({ firstname: "", lastname: "", email: "", password: "" })
+    setMessage(null)
 
     const result = await signUpWorkerAction(
       formData.firstname,
@@ -60,18 +63,22 @@ const SignupPage = () => {
       formData.password
     )
 
-    if (result?.error) {
+    if(result.success){
+      setMessage("Inscription réussie ! Vérifiez votre email pour confirmer votre compte.")
+      setTimeout(() => {
+        setMessage(null)
+        router.push("/worker/sign-in")
+    },5000)
+    
+    }else if (result.error){
       seterrFormData({
         firstname: "",
         lastname: "",
         email: result.error,
         password: ""
       })
-      setIsLoading(false)
-    } else {
-      // Redirect based on role
-      router.push(result.redirectTo || "/")
     }
+    setIsLoading(false)
   }
 
   const handleGoogleSignIn = async () => {
@@ -86,8 +93,16 @@ const SignupPage = () => {
             MARcrute
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-center">
+
+        <div className="flex flex-1 flex-col items-center justify-center">
           <div className="w-full max-w-lg">
+
+            {message && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span className="block sm:inline">{message}</span>
+              </div>
+            )}
+
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
               <div className="flex flex-col items-center gap-1 text-center">
                 <h1 className="text-2xl font-bold">Je crée mon compte</h1>
@@ -162,6 +177,7 @@ const SignupPage = () => {
           </div>
         </div>
       </div>
+
       <div className="relative hidden lg:block bg-linear-to-br from-purple-600 to-purple-800 rounded-l-4xl">
         <div className="flex gap-8 flex-col justify-center items-center h-full p-12">
           <h2 className={`${dancingScript.className} text-white text-5xl font-bold text-center max-w-lg leading-tight`}>
