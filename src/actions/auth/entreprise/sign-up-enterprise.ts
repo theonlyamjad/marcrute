@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
-import { signIn } from "@/app/api/auth/[...nextauth]/route";
 
 // Config Nodemailer
 const transporter = nodemailer.createTransport({
