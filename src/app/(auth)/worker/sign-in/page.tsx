@@ -7,8 +7,8 @@ import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
 import { Briefcase, Building2, Sparkles } from "lucide-react"
-import { signInAction } from "@/actions/auth/sign-in"
 import { signIn } from "next-auth/react"
+import { signInWorkerAction } from "@/actions/auth/sign-in-worker"
 
 const dancingScript = Dancing_Script({
   variable: "--font-dancing-script",
@@ -49,8 +49,7 @@ const SignInPage = () => {
     setIsLoading(true)
     seterrFormData({ email: "", password: "" })
 
-    const result = await signInAction(formData.email, formData.password)
-
+    const result = await signInWorkerAction(formData.email, formData.password)
     if (result?.error) {
       seterrFormData({
         email: result.error,
@@ -99,7 +98,7 @@ const SignInPage = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Mot de passe</span>
                     <Link
-                      href="/forgot-password"
+                      href="/worker/forgot-password"
                       className="text-sm underline-offset-4 hover:underline"
                     >
                       Mot de passe oublié?
