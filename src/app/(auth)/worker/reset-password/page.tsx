@@ -3,7 +3,7 @@
 import { useState } from "react";
 import InputForm from "@/components/Form/inputForm";
 import { Button } from "@/components/ui/button";
-import { resetPasswordAction } from "@/actions/auth/reset-password-worker";
+import { resetPasswordAction } from "@/actions/auth/worker/reset-password-worker";
 import { useSearchParams, useRouter } from "next/navigation";
 
 const ResetPasswordPage = () => {
