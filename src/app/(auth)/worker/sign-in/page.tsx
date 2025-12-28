@@ -8,7 +8,7 @@ import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
 import { Briefcase, Building2, Sparkles } from "lucide-react"
 import { signIn } from "next-auth/react"
-import { signInWorkerAction } from "@/actions/auth/sign-in-worker"
+import { signInWorkerAction } from "@/actions/auth/worker/sign-in-worker"
 
 const dancingScript = Dancing_Script({
   variable: "--font-dancing-script",

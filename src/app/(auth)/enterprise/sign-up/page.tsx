@@ -7,7 +7,7 @@ import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
 import { Users, TrendingUp, Shield } from "lucide-react"
-import { signUpEnterpriseAction } from "@/actions/auth/sign-up-enterprise"
+import { signUpEnterpriseAction } from "@/actions/auth/entreprise/sign-up-enterprise"
 import { signIn } from "next-auth/react"
 
 const dancingScript = Dancing_Script({
@@ -158,7 +158,7 @@ const SignupPage = () => {
             </div>
             <div className="flex items-center gap-3 justify-center">
               <TrendingUp className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Publication d'offres illimitée</p>
+              <p className="text-lg font-semibold">Publication d&apos;offres illimitée</p>
             </div>
             <div className="flex items-center gap-3 justify-center">
               <Shield className="w-6 h-6 shrink-0" />

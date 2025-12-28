@@ -61,7 +61,7 @@ export async function signUpWorkerAction(
         <h2 style="color: #4CAF50;">Bienvenue sur Marcrute, ${firstname} !</h2>
         <p>Merci de vous être inscrit sur <strong>Marcrute</strong>.</p>
         <p>Pour commencer, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :</p>
-        <a href="${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}" 
+        <a href="${process.env.NEXTAUTH_URL}/api/auth/worker/verify-email?token=${token}" 
           style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
           Vérifier mon email
         </a>

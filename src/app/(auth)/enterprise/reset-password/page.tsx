@@ -3,7 +3,7 @@
 import { useState } from "react";
 import InputForm from "@/components/Form/inputForm";
 import { Button } from "@/components/ui/button";
-import { resetPasswordAction } from "@/actions/auth/worker/reset-password-worker";
+import { resetPasswordAction } from "@/actions/auth/entreprise/reset-password-entreprise";
 import { useSearchParams, useRouter } from "next/navigation";
 
 const ResetPasswordPage = () => {
@@ -35,7 +35,7 @@ const ResetPasswordPage = () => {
       setError(result.error);
     } else {
       setMessage(result.message || "");
-      setTimeout(() => router.push("/worker/sign-in"), 2000);
+      setTimeout(() => router.push("/enterprise/sign-in"), 2000);
     }
 
     setIsLoading(false);

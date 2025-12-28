@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import InputForm from "@/components/Form/inputForm";
 import { Button } from "@/components/ui/button";
-import { forgotPasswordAction } from "@/actions/auth/worker/forgot-password-worker";
+import { forgotPasswordEntrepriseAction } from "@/actions/auth/entreprise/forgot-password-entreprise";
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState("");
@@ -17,7 +17,7 @@ const ForgotPasswordPage = () => {
     setMessage(null);
     setError(null);
 
-    const result = await forgotPasswordAction(email);
+    const result = await forgotPasswordEntrepriseAction(email);
 
     if (result.error) {
       setError(result.error);

@@ -7,7 +7,7 @@ import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
 import { Briefcase, Building2, Sparkles } from "lucide-react"
-import { signUpWorkerAction } from "@/actions/auth/sign-up-worker"
+import { signUpWorkerAction } from "@/actions/auth/worker/sign-up-worker"
 import { signIn } from "next-auth/react"
 
 const dancingScript = Dancing_Script({

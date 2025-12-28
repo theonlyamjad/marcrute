@@ -7,7 +7,7 @@ import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
 import { Users, TrendingUp, Shield } from "lucide-react"
-import { signInAction } from "@/actions/auth/sign-in-enterprise"
+import { signInEntrepriseAction } from "@/actions/auth/entreprise/sign-in-entreprise"
 import { signIn } from "next-auth/react"
 
 const dancingScript = Dancing_Script({
@@ -49,7 +49,7 @@ const SignInPage = () => {
     setIsLoading(true)
     seterrFormData({ email: "", password: "" })
 
-    const result = await signInAction(formData.email, formData.password)
+    const result = await signInEntrepriseAction(formData.email, formData.password)
 
     if (result?.error) {
       seterrFormData({
@@ -99,7 +99,7 @@ const SignInPage = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Mot de passe</span>
                     <Link
-                      href="/forgot-password"
+                      href="/enterprise/forgot-password"
                       className="text-sm underline-offset-4 hover:underline"
                     >
                       Mot de passe oublié?
@@ -151,7 +151,7 @@ const SignInPage = () => {
             </div>
             <div className="flex items-center gap-3 justify-center">
               <TrendingUp className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Publication d'offres illimitée</p>
+              <p className="text-lg font-semibold">Publication d&apos;offres illimitée</p>
             </div>
             <div className="flex items-center gap-3 justify-center">
               <Shield className="w-6 h-6 shrink-0" />
