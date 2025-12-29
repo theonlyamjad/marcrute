@@ -45,11 +45,11 @@ const Hero = () => {
   }, [])
 
   return (
-    <section id="hero" className="py-5 px-5 pb-5">
+    <section id="hero" className="py-3 sm:py-5 px-3 sm:px-5 pb-3 sm:pb-5">
       {/* Rounded Container with Background Image */}
       <div 
         ref={heroRef}
-        className="relative min-h-[85vh] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/50 border-2 border-slate-200/60 flex items-center"
+        className="relative min-h-[70vh] sm:min-h-[80vh] lg:min-h-[85vh] rounded-2xl sm:rounded-3xl lg:rounded-[2.5rem] overflow-hidden shadow-2xl shadow-[#1D546D]/30 border-2 border-[#5F9598]/30 flex items-center"
       >
         
         {/* Background Image */}
@@ -58,40 +58,38 @@ const Hero = () => {
           alt="Hero Background"
           className="absolute inset-0 w-full h-full object-cover scale-105 transition-transform duration-700 hover:scale-100"
         />
-        
-        {/* linear Overlay */}
+              {/* linear Overlay */}
         <div className="absolute inset-0 bg-linear-to-br from-slate-900/60 via-slate-800/50 to-slate-900/60" />
-
         {/* Content Container */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 w-full">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:py-20 w-full">
           
           {/* THE GLASS CARD */}
-          <div className="max-w-3xl p-8 md:p-12 ">
+          <div className="max-w-3xl p-6 sm:p-8 md:p-10 lg:p-12">
             
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Main Heading */}
               <h1 
                 ref={headingRef}
-                className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] tracking-tight"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-[#F3F4F4] leading-[1.1] tracking-tight"
               >
                 Connectez-vous avec les{' '}
-                <span className="text-purple-300">meilleurs talents</span>{' '}
+                <span className="text-[#5F9598]">meilleurs talents</span>{' '}
                 du Maroc
               </h1>
 
               {/* Subheading */}
               <p 
                 ref={subtitleRef}
-                className="text-lg md:text-xl text-white/95 font-medium leading-relaxed max-w-2xl"
+                className="text-base sm:text-lg md:text-xl text-[#F3F4F4]/95 font-medium leading-relaxed max-w-2xl"
               >
                 La plateforme qui facilite le recrutement de professionnels qualifiés dans tous les domaines
               </p>
 
               {/* Toggle Buttons */}
-              <div ref={buttonsRef} className="flex flex-wrap gap-4 pt-6">
+              <div ref={buttonsRef} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-4 sm:pt-6">
                 <Button 
                   onClick={() => router.push('/enterprise/sign-in')}
-                  className="bg-white hover:bg-slate-50 text-slate-900 rounded-full px-10 py-7 text-base font-semibold cursor-pointer shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                  className="w-full sm:w-auto bg-[#F3F4F4] hover:bg-[#5F9598] text-[#061E29] hover:text-[#F3F4F4] rounded-full px-8 sm:px-10 py-6 sm:py-7 text-sm sm:text-base font-semibold cursor-pointer shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
                 >
                   Recruter un talent
                 </Button>
@@ -99,7 +97,7 @@ const Hero = () => {
                 <Button 
                   onClick={() => router.push('/worker/sign-in')}
                   variant="outline" 
-                  className="bg-white/10 backdrop-blur-md border-2 border-white/40 text-white hover:bg-white hover:text-slate-900 rounded-full px-10 py-7 text-base font-semibold cursor-pointer transition-all duration-300 hover:scale-105 shadow-lg"
+                  className="w-full sm:w-auto bg-[#F3F4F4]/10 backdrop-blur-md border-2 border-[#5F9598]/60 text-[#F3F4F4] hover:bg-[#5F9598] hover:text-[#061E29] hover:border-[#5F9598] rounded-full px-8 sm:px-10 py-6 sm:py-7 text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 hover:scale-105 shadow-lg"
                 >
                   Trouver une mission
                 </Button>

@@ -107,14 +107,14 @@ const Stats = () => {
 
   return (
     <section id="stats" ref={sectionRef} className="px-5 pb-5">
-      <div className="rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/50 border-2 border-slate-200/60 bg-white/70 backdrop-blur-xl py-16">
+      <div className="rounded-[2.5rem] overflow-hidden shadow-2xl shadow-[#1D546D]/20 border-2 border-[#5F9598]/30 bg-[#F3F4F4]/70 backdrop-blur-xl py-16">
         <div className="max-w-6xl mx-auto px-6">
           
           {/* Title */}
           <div className="text-center mb-16">
             <h2 
               ref={headingRef}
-              className="text-4xl md:text-5xl font-bold bg-linear-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent"
+              className="text-4xl md:text-5xl font-bold bg-linear-to-r from-[#061E29] to-[#1D546D] bg-clip-text text-transparent"
             >
               MARcrute en chiffres
             </h2>
@@ -130,19 +130,19 @@ const Stats = () => {
                   key={index}
                   ref={(el) => { cardsRef.current[index] = el }}
                 >
-                  <Card className="border-2 border-slate-200/60 shadow-lg bg-white/80 backdrop-blur-md ">
+                  <Card className="border-2 border-[#5F9598]/30 shadow-lg bg-[#F3F4F4]/90 backdrop-blur-md">
                     <CardContent className="p-8 text-center space-y-4">
-                      <div className="inline-flex p-4 bg-linear-to-br from-slate-100 to-slate-200 rounded-2xl shadow-md">
-                        <Icon className="w-10 h-10 text-slate-700" strokeWidth={1.5} />
+                      <div className="inline-flex p-4 bg-linear-to-br from-[#5F9598]/20 to-[#1D546D]/20 rounded-2xl shadow-md">
+                        <Icon className="w-10 h-10 text-[#061E29]" strokeWidth={1.5} />
                       </div>
                       
-                      <h3 className="text-5xl font-bold text-slate-900 tracking-tight">
+                      <h3 className="text-5xl font-bold text-[#061E29] tracking-tight">
                         <span ref={(el) => { counterRefs.current[index] = el }}>
                           0+
                         </span>
                       </h3>
                       
-                      <p className="text-slate-600 text-lg font-medium">
+                      <p className="text-[#1D546D] text-lg font-medium">
                         {stat.label}
                       </p>
                     </CardContent>

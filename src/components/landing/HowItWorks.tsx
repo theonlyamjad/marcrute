@@ -16,10 +16,10 @@ const HowItWorks = () => {
   const sections = [
     {
       role: "Travailleurs",
-      color: "text-slate-700",
-      bgColor: "bg-slate-700",
-      borderColor: "border-slate-300",
-      bg: "bg-slate-100",
+      color: "text-[#1D546D]",
+      bgColor: "bg-[#1D546D]",
+      borderColor: "border-[#5F9598]/30",
+      bg: "bg-[#5F9598]/10",
       steps: [
         { icon: UserCircle, title: "Créer votre profil", desc: "Inscrivez-vous en quelques minutes" },
         { icon: FileText, title: "Compléter vos données", desc: "Informations personnelles et professionnelles" },
@@ -28,10 +28,10 @@ const HowItWorks = () => {
     },
     {
       role: "Entreprises",
-      color: "text-slate-800",
-      bgColor: "bg-slate-800",
-      borderColor: "border-slate-400",
-      bg: "bg-slate-200",
+      color: "text-[#061E29]",
+      bgColor: "bg-[#061E29]",
+      borderColor: "border-[#5F9598]/40",
+      bg: "bg-[#1D546D]/10",
       steps: [
         { icon: Building2, title: "Créer votre profil", desc: "Créez votre compte entreprise" },
         { icon: FileText, title: "Compléter vos données", desc: "Informations sur votre organisation" },
@@ -91,19 +91,19 @@ const HowItWorks = () => {
 
   return (
     <section id="how-it-works" ref={containerRef} className="px-3 sm:px-5 pb-5">
-      <div className="rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/50 border-2 border-slate-200/60 bg-white/70 backdrop-blur-xl py-12 sm:py-20">
+      <div className="rounded-[2.5rem] overflow-hidden shadow-2xl shadow-[#1D546D]/20 border-2 border-[#5F9598]/30 bg-[#F3F4F4]/70 backdrop-blur-xl py-12 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
           
           <div className="text-center mb-12 sm:mb-20">
             <h2 
               ref={headingRef}
-              className="text-3xl sm:text-4xl md:text-5xl font-bold bg-linear-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent mb-3 sm:mb-4"
+              className="text-3xl sm:text-4xl md:text-5xl font-bold bg-linear-to-r from-[#061E29] to-[#1D546D] bg-clip-text text-transparent mb-3 sm:mb-4"
             >
               Comment ça marche
             </h2>
             <p 
               ref={subtitleRef}
-              className="text-base sm:text-xl text-slate-600"
+              className="text-base sm:text-xl text-[#1D546D]"
             >
               Une plateforme, deux expériences simplifiées
             </p>
@@ -118,10 +118,10 @@ const HowItWorks = () => {
                   <span className={`text-xs sm:text-sm font-bold uppercase tracking-widest ${section.color}`}>
                     Espace {section.role}
                   </span>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#061E29]">
                     Votre parcours vers le succès
                   </h3>
-                  <p className="text-sm sm:text-base text-slate-600">
+                  <p className="text-sm sm:text-base text-[#1D546D]">
                     Suivez ces étapes simples pour commencer à utiliser notre plateforme dès aujourd'hui.
                   </p>
                   <div className={`h-1 w-16 sm:w-20 rounded-full ${section.bgColor}`} />
@@ -135,20 +135,20 @@ const HowItWorks = () => {
                   return (
                     <div key={idx} className="relative pl-6 sm:pl-8 step-card">
                       {/* Step Number Badge - Half outside, half inside */}
-                      <div className={`absolute left-0 top-1/2 -translate-y-1/2 size-12 sm:size-16 flex items-center justify-center text-white font-bold text-lg sm:text-2xl rounded-full ${section.bgColor} shadow-lg z-10`}>
+                      <div className={`absolute left-0 top-1/2 -translate-y-1/2 size-12 sm:size-16 flex items-center justify-center text-[#F3F4F4] font-bold text-lg sm:text-2xl rounded-full ${section.bgColor} shadow-lg z-10`}>
                         {idx + 1}
                       </div>
 
-                      <Card className={`border-2 ${section.borderColor} bg-white/80 backdrop-blur-md shadow-lg  overflow-hidden group`}>
+                      <Card className={`border-2 ${section.borderColor} bg-[#F3F4F4]/90 backdrop-blur-md shadow-lg  overflow-hidden group`}>
                         <CardContent className="p-4 sm:p-6 lg:p-8 pl-8 sm:pl-10 lg:pl-12 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
                           <div className={`p-3 sm:p-4 rounded-2xl ${section.bg}  shrink-0 shadow-sm`}>
                             <Icon className={`w-6 h-6 sm:w-8 sm:h-8 ${section.color}`} strokeWidth={1.5} />
                           </div>
                           <div className="min-w-0">
-                            <h4 className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 mb-1">
+                            <h4 className="text-base sm:text-lg lg:text-xl font-bold text-[#061E29] mb-1">
                               {step.title}
                             </h4>
-                            <p className="text-sm sm:text-base text-slate-600 wrap-break-words">
+                            <p className="text-sm sm:text-base text-[#1D546D] wrap-break-words">
                               {step.desc}
                             </p>
                           </div>
