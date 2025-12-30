@@ -2,19 +2,14 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
-import { Users, TrendingUp, Shield } from "lucide-react"
 import { signUpEnterpriseAction } from "@/actions/auth/entreprise/sign-up-enterprise"
 import { signIn } from "next-auth/react"
+import img_sign_up_entreprise from '../../../../../public/assets/images/enterprise/Hiring-amico.png'
+import Image from "next/image"
 
-const dancingScript = Dancing_Script({
-  variable: "--font-dancing-script",
-  subsets: ["latin"],
-  weight: ["400", "700"]
-})
 
 const SignupPage = () => {
   const router = useRouter()
@@ -74,26 +69,37 @@ const SignupPage = () => {
     await signIn("google", { callbackUrl: "/dashboard" })
   }
 
-  return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/" className="flex items-center gap-2 font-black">
-            MARcrute
+return (
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+    <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+
+      {/* FORM */}
+      <div className="p-6 sm:p-10 flex flex-col">
+        {/* LOGO */}
+        <div className="mb-6 flex justify-center lg:justify-start">
+          <Link href="/" className="text-xl font-black text-slate-800">
+            MARcrute <span className="text-[#5F9598]">Enterprise</span>
           </Link>
         </div>
+
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-lg">
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-              <div className="flex flex-col items-center gap-1 text-center">
-                <h1 className="text-2xl font-bold">Créer un compte entreprise</h1>
+
+              <div className="text-center lg:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
+                  Créer un compte entreprise
+                </h1>
+                <p className="text-slate-500 mt-1">
+                  Recrutez plus rapidement les talents adaptés à votre équipe
+                </p>
               </div>
-              
+
               <div className="flex flex-col gap-4">
-                <InputForm 
-                  id="companyName" 
-                  label="Nom de l'entreprise"
-                  placeholder="Nom de votre entreprise"
+                <InputForm
+                  id="companyName"
+                  label="Nom de l’entreprise"
+                  placeholder="Ex : Atlas Digital"
                   type="text"
                   value={formData.companyName}
                   onChange={handleChange}
@@ -101,10 +107,10 @@ const SignupPage = () => {
                   error={errformData.companyName}
                 />
 
-                <InputForm 
-                  id="email" 
-                  label="Email"
-                  placeholder="exemple@entreprise.com"
+                <InputForm
+                  id="email"
+                  label="Email professionnel"
+                  placeholder="contact@entreprise.com"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -112,11 +118,11 @@ const SignupPage = () => {
                   onFocus={() => handleFocus("email")}
                   error={errformData.email}
                 />
-                
-                <InputForm 
-                  id="password" 
+
+                <InputForm
+                  id="password"
                   label="Mot de passe"
-                  placeholder="******"
+                  placeholder="••••••••"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -124,21 +130,28 @@ const SignupPage = () => {
                   onFocus={() => handleFocus("password")}
                   error={errformData.password}
                 />
-                
-                <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-[#1D546D] hover:bg-[#5F9598] transition-colors cursor-pointer"
+                >
                   {isLoading ? "Création..." : "Créer mon compte entreprise"}
                 </Button>
-                
-                <OAuth 
-                  text_1="S'inscrire avec Google" 
-                  text_2="S'inscrire avec Microsoft"
+
+                <OAuth
+                  text_1="Continuer avec Google"
+                  text_2="Continuer avec Microsoft"
                   onGoogleClick={handleGoogleSignIn}
                 />
-                
-                <p className="text-center text-sm">
+
+                <p className="text-center text-sm text-slate-600">
                   Déjà inscrit ?{" "}
-                  <Link href="/enterprise/sign-in" className="underline underline-offset-4">
-                    Connectez-vous
+                  <Link
+                    href="/enterprise/sign-in"
+                    className="font-medium text-cyan-700 hover:underline"
+                  >
+                    Se connecter
                   </Link>
                 </p>
               </div>
@@ -146,29 +159,20 @@ const SignupPage = () => {
           </div>
         </div>
       </div>
-      <div className="relative hidden lg:block bg-linear-to-br from-cyan-600 to-cyan-800 rounded-l-4xl">
-        <div className="flex gap-8 flex-col justify-center items-center h-full p-12">
-          <h2 className={`${dancingScript.className} text-white text-5xl font-bold text-center max-w-lg leading-tight`}>
-            Recrutez les meilleurs talents marocains
-          </h2>
-          <div className="text-white text-center space-y-4 max-w-md">
-            <div className="flex items-center gap-3 justify-center">
-              <Users className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Accédez à +300 000 freelancers qualifiés</p>
-            </div>
-            <div className="flex items-center gap-3 justify-center">
-              <TrendingUp className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Publication d&apos;offres illimitée</p>
-            </div>
-            <div className="flex items-center gap-3 justify-center">
-              <Shield className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Gestion simplifiée des recrutements</p>
-            </div>
-          </div>
-        </div>
+
+      {/* IMAGE */}
+      <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-cyan-50 to-sky-100 p-8">
+        <Image
+          src={img_sign_up_entreprise}
+          alt="Inscription entreprise"
+          className="max-w-md w-full h-auto"
+          priority
+        />
       </div>
     </div>
-  )
+  </div>
+)
+
 }
 
 export default SignupPage
