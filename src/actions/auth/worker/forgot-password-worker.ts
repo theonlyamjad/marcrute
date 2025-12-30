@@ -40,15 +40,15 @@ export async function forgotPasswordAction(email: string) {
       to: email,
       subject: "Réinitialisation de votre mot de passe",
       html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <h2 style="color: #4CAF50;">Bonjour ${user.nomComplet || ""},</h2>
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #5F9598;">
+            <h2 style="color: #5F9598;">Bonjour ${user.nomComplet || ""},</h2>
             <p>Vous avez demandé à réinitialiser votre mot de passe sur <strong>MARcrute</strong>.</p>
             <p>Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe :</p>
             <a href="${process.env.NEXTAUTH_URL}/worker/reset-password?token=${token}" 
-                style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
+                style="display: inline-block; padding: 10px 20px; background-color: #5F9598; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
             Réinitialiser mon mot de passe
             </a>
-            <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
+            <p style="margin-top: 20px; font-size: 0.9em; color: #5F9598;">
             Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
             </p>
         </div>
