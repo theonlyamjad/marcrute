@@ -2,19 +2,14 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
-import { Briefcase, Building2, Sparkles } from "lucide-react"
 import { signUpWorkerAction } from "@/actions/auth/worker/sign-up-worker"
 import { signIn } from "next-auth/react"
+import img_sign_up from '../../../../../public/assets/images/worker/Sign up-amico.png'
+import Image from "next/image"
 
-const dancingScript = Dancing_Script({
-  variable: "--font-dancing-script",
-  subsets: ["latin"],
-  weight: ["400", "700"]
-})
 
 const SignupPage = () => {
   const router = useRouter()
@@ -85,33 +80,41 @@ const SignupPage = () => {
     await signIn("google", { callbackUrl: "/dashboard" })
   }
 
-  return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/" className="flex items-center gap-2 font-black">
+return (
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="w-full max-w-6xl bg-white rounded-2xl shadow-lg grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+
+      <div className="p-6 sm:p-10 flex flex-col">
+
+        <div className="mb-6">
+          <Link href="/" className="text-xl font-black text-[#1D546D]">
             MARcrute
           </Link>
         </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center">
+        <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-lg">
 
             {message && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <span className="block sm:inline">{message}</span>
+              <div className="mb-4 rounded-lg bg-green-100 px-4 py-3 text-green-700 text-sm text-center">
+                {message}
               </div>
             )}
 
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-              <div className="flex flex-col items-center gap-1 text-center">
-                <h1 className="text-2xl font-bold">Je crée mon compte</h1>
+              <div className="text-center lg:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+                  Je crée mon compte
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  Rejoignez la plateforme en quelques secondes
+                </p>
               </div>
-              
+
               <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <InputForm 
-                    id="firstname" 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <InputForm
+                    id="firstname"
                     label="Prénom"
                     placeholder="Votre prénom"
                     type="text"
@@ -120,8 +123,8 @@ const SignupPage = () => {
                     onFocus={() => handleFocus("firstname")}
                     error={errformData.firstname}
                   />
-                  <InputForm 
-                    id="lastname" 
+                  <InputForm
+                    id="lastname"
                     label="Nom"
                     placeholder="Votre nom"
                     type="text"
@@ -132,10 +135,10 @@ const SignupPage = () => {
                   />
                 </div>
 
-                <InputForm 
-                  id="email" 
+                <InputForm
+                  id="email"
                   label="Email"
-                  placeholder="exemple@exemple.com"
+                  placeholder="exemple@email.com"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -143,11 +146,11 @@ const SignupPage = () => {
                   onFocus={() => handleFocus("email")}
                   error={errformData.email}
                 />
-                
-                <InputForm 
-                  id="password" 
+
+                <InputForm
+                  id="password"
                   label="Mot de passe"
-                  placeholder="******"
+                  placeholder="••••••••"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -155,20 +158,27 @@ const SignupPage = () => {
                   onFocus={() => handleFocus("password")}
                   error={errformData.password}
                 />
-                
-                <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-[#5F9598] hover:bg-[#1D546D] transition-colors"
+                >
                   {isLoading ? "Création..." : "Créer mon compte"}
                 </Button>
-                
-                <OAuth 
-                  text_1="S'inscrire avec Google" 
+
+                <OAuth
+                  text_1="S'inscrire avec Google"
                   text_2="S'inscrire avec Microsoft"
                   onGoogleClick={handleGoogleSignIn}
                 />
-                
-                <p className="text-center text-sm">
+
+                <p className="text-center text-sm text-gray-600">
                   Déjà inscrit ?{" "}
-                  <Link href="/worker/sign-in" className="underline underline-offset-4">
+                  <Link
+                    href="/worker/sign-in"
+                    className="font-medium text-[#1D546D] hover:underline"
+                  >
                     Connectez-vous
                   </Link>
                 </p>
@@ -178,29 +188,18 @@ const SignupPage = () => {
         </div>
       </div>
 
-      <div className="relative hidden lg:block bg-linear-to-br from-purple-600 to-purple-800 rounded-l-4xl">
-        <div className="flex gap-8 flex-col justify-center items-center h-full p-12">
-          <h2 className={`${dancingScript.className} text-white text-5xl font-bold text-center max-w-lg leading-tight`}>
-            Trouvez votre prochaine mission
-          </h2>
-          <div className="text-white text-center space-y-4 max-w-md">
-            <div className="flex items-center gap-3 justify-center">
-              <Sparkles className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Des milliers de missions disponibles</p>
-            </div>
-            <div className="flex items-center gap-3 justify-center">
-              <Building2 className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Travaillez avec les meilleures entreprises</p>
-            </div>
-            <div className="flex items-center gap-3 justify-center">
-              <Briefcase className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">100% gratuit pour les freelancers</p>
-            </div>
-          </div>
-        </div>
+      <div className="hidden lg:flex items-center justify-center bg-[#F4F9F9] p-8">
+        <Image
+          src={img_sign_up}
+          alt="Inscription"
+          className="max-w-md w-full h-auto"
+          priority
+        />
       </div>
     </div>
-  )
+  </div>
+)
+
 }
 
 export default SignupPage
