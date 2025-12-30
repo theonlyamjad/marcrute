@@ -2,19 +2,14 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Dancing_Script } from "next/font/google"
 import InputForm from '@/components/Form/inputForm'
 import OAuth from '@/components/Form/OAuth'
 import { Button } from '@/components/ui/button'
-import { Users, TrendingUp, Shield } from "lucide-react"
 import { signInEntrepriseAction } from "@/actions/auth/entreprise/sign-in-entreprise"
 import { signIn } from "next-auth/react"
+import img_sign_in_entreprise from '../../../../../public/assets/images/enterprise/Profiling-bro.png'
+import Image from "next/image"
 
-const dancingScript = Dancing_Script({
-  variable: "--font-dancing-script",
-  subsets: ["latin"],
-  weight: ["400", "700"]
-})
 
 const SignInPage = () => {
   const router = useRouter()
@@ -58,7 +53,6 @@ const SignInPage = () => {
       })
       setIsLoading(false)
     } else {
-      // Redirect based on role
       router.push(result.redirectTo || "/")
     }
   }
@@ -67,26 +61,39 @@ const SignInPage = () => {
     await signIn("google", { callbackUrl: "/dashboard" })
   }
 
-  return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/" className="flex items-center gap-2 font-black">
-            MARcrute
+return (
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+    <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+
+      {/* FORM */}
+      <div className="p-6 sm:p-10 flex flex-col">
+        {/* LOGO */}
+        <div className="mb-6 flex justify-center lg:justify-start">
+          <Link href="/" className="text-xl font-black text-slate-800">
+            MARcrute <span className="text-[#5F9598]">Enterprise</span>
           </Link>
         </div>
+
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-lg">
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-              <div className="flex flex-col items-center gap-1 text-center">
-                <h1 className="text-2xl font-bold">Connexion à votre compte</h1>
+
+              {/* HEADER */}
+              <div className="text-center lg:text-left">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
+                  Connexion entreprise
+                </h1>
+                <p className="text-slate-500 mt-1">
+                  Accédez à votre espace de recrutement
+                </p>
               </div>
-              
+
+              {/* FIELDS */}
               <div className="flex flex-col gap-4">
-                <InputForm 
-                  id="email" 
-                  label="Email"
-                  placeholder="exemple@exemple.com"
+                <InputForm
+                  id="email"
+                  label="Email professionnel"
+                  placeholder="contact@entreprise.com"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -94,21 +101,24 @@ const SignInPage = () => {
                   onFocus={() => handleFocus("email")}
                   error={errformData.email}
                 />
-                
+
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Mot de passe</span>
+                    <span className="text-sm font-medium text-slate-700">
+                      Mot de passe
+                    </span>
                     <Link
                       href="/enterprise/forgot-password"
-                      className="text-sm underline-offset-4 hover:underline"
+                      className="text-sm text-cyan-700 hover:underline"
                     >
-                      Mot de passe oublié?
+                      Mot de passe oublié ?
                     </Link>
                   </div>
-                  <InputForm 
-                    id="password" 
+
+                  <InputForm
+                    id="password"
                     label=""
-                    placeholder="******"
+                    placeholder="••••••••"
                     type="password"
                     value={formData.password}
                     onChange={handleChange}
@@ -117,21 +127,31 @@ const SignInPage = () => {
                     error={errformData.password}
                   />
                 </div>
-                
-                <Button type="submit" className="w-full cursor-pointer" disabled={isLoading}>
-                  {isLoading ? "Connexion..." : "Connecter"}
+
+                {/* BUTTON */}
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-[#1D546D] hover:bg-[#5F9598] transition-colors cursor-pointer"
+                >
+                  {isLoading ? "Connexion..." : "Accéder à mon espace"}
                 </Button>
-                
-                <OAuth 
-                  text_1="Continuez avec Google" 
-                  text_2="Continuez avec Microsoft"
+
+                {/* OAUTH */}
+                <OAuth
+                  text_1="Continuer avec Google"
+                  text_2="Continuer avec Microsoft"
                   onGoogleClick={handleGoogleSignIn}
                 />
-                
-                <p className="text-center text-sm">
-                  Vous n&apos;avez pas de compte?{" "}
-                  <Link href="/enterprise/sign-up" className="underline underline-offset-4">
-                    S&apos;inscrire
+
+                {/* LINK */}
+                <p className="text-center text-sm text-slate-600">
+                  Nouvelle entreprise ?{" "}
+                  <Link
+                    href="/enterprise/sign-up"
+                    className="font-medium text-cyan-700 hover:underline"
+                  >
+                    Créer un compte
                   </Link>
                 </p>
               </div>
@@ -139,29 +159,20 @@ const SignInPage = () => {
           </div>
         </div>
       </div>
-      <div className="relative hidden lg:block bg-linear-to-br from-cyan-600 to-cyan-800 rounded-l-4xl">
-        <div className="flex gap-8 flex-col justify-center items-center h-full p-12">
-          <h2 className={`${dancingScript.className} text-white text-5xl font-bold text-center max-w-lg leading-tight`}>
-            Recrutez les meilleurs talents marocains
-          </h2>
-          <div className="text-white text-center space-y-4 max-w-md">
-            <div className="flex items-center gap-3 justify-center">
-              <Users className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Accédez à +300 000 freelancers qualifiés</p>
-            </div>
-            <div className="flex items-center gap-3 justify-center">
-              <TrendingUp className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Publication d&apos;offres illimitée</p>
-            </div>
-            <div className="flex items-center gap-3 justify-center">
-              <Shield className="w-6 h-6 shrink-0" />
-              <p className="text-lg font-semibold">Gestion simplifiée des recrutements</p>
-            </div>
-          </div>
-        </div>
+
+      {/* IMAGE */}
+      <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-cyan-50 to-sky-100 p-8">
+        <Image
+          src={img_sign_in_entreprise}
+          alt="Connexion entreprise"
+          className="max-w-md w-full h-auto"
+          priority
+        />
       </div>
     </div>
-  )
+  </div>
+)
+
 }
 
 export default SignInPage
