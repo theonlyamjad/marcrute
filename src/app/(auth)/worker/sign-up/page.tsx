@@ -77,7 +77,7 @@ const SignupPage = () => {
   }
 
   const handleGoogleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/dashboard" })
+    await signIn("google", { callbackUrl: "/worker/dashboard" })
   }
 
 return (
@@ -169,7 +169,6 @@ return (
 
                 <OAuth
                   text_1="S'inscrire avec Google"
-                  text_2="S'inscrire avec Microsoft"
                   onGoogleClick={handleGoogleSignIn}
                 />
 
