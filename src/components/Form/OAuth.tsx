@@ -1,10 +1,9 @@
 type OauthType = {
   text_1: string;
-  text_2: string;
   onGoogleClick?: () => void;
 };
 
-const OAuth = ({ text_1, text_2, onGoogleClick }: OauthType) => {
+const OAuth = ({ text_1, onGoogleClick }: OauthType) => {
   return (
     <div className="w-full">
       <div className="flex w-full flex-col-reverse justify-around gap-3 md:flex-row lg:flex-row">

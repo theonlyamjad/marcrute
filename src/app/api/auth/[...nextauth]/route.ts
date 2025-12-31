@@ -1,12 +1,11 @@
-import NextAuth from "next-auth";
+import NextAuth, { User, NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export const authOptions = {
+export const authOptions: NextAuthConfig = {
   providers: [
-    // Google OAuth Provider
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -19,14 +18,14 @@ export const authOptions = {
       }
     }),
     
-    // Email/Password Provider
     CredentialsProvider({
       name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Mot de passe", type: "password" },
+        role: { label: "Role", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email et mot de passe requis");
         }
@@ -39,6 +38,10 @@ export const authOptions = {
           throw new Error("Identifiants invalides");
         }
 
+        if (user.role !== credentials.role) {
+          throw new Error("Accès interdit pour ce rôle");
+        }
+
         const passwordMatch = await bcrypt.compare(
           credentials.password as string,
           user.hashMotDePasse
@@ -48,23 +51,23 @@ export const authOptions = {
           throw new Error("Identifiants invalides");
         }
 
-        // Email verification check disabled for now
-        // if (!user.emailVerified) {
-        //   throw new Error("Veuillez vérifier votre email avant de vous connecter");
-        // }
+        if (!user.emailVerified) {
+          throw new Error("Veuillez vérifier votre email avant de vous connecter");
+        }
 
         return {
           id: user.idUtilisateur,
           email: user.email,
           role: user.role,
           name: user.nomComplet,
+          emailVerified: user.emailVerified,
         };
       },
     }),
   ],
   
   callbacks: {
-    async signIn({ user, account, profile }: any) {
+    async signIn({ user, account, profile }) {
       // For OAuth sign-in (Google)
       if (account?.provider === "google") {
         try {
@@ -77,15 +80,16 @@ export const authOptions = {
             const newUser = await prisma.utilisateur.create({
               data: {
                 email: user.email!,
-                nomComplet: user.name || profile?.name || "Google User",
+                nomComplet: user.name || (profile as { name?: string })?.name || "Google User",
                 emailVerified: new Date(),
-                role: "Travailleur", // Default role for now
-                hashMotDePasse: null, // No password for OAuth users
+                role: "Travailleur",
+                hashMotDePasse: null,
               },
             });
             
             // Update user id for session
-            user.id = newUser.idUtilisateur;
+            (user as User).id = newUser.idUtilisateur;
+            (user as User).role = newUser.role;
             
             console.log("Created new Google user:", newUser.email);
           } else {
@@ -97,8 +101,8 @@ export const authOptions = {
               });
             }
             
-            // Set user id for session
-            user.id = existingUser.idUtilisateur;
+            (user as User).id = existingUser.idUtilisateur;
+            (user as User).role = existingUser.role;
           }
           
           return true;
@@ -111,11 +115,10 @@ export const authOptions = {
       return true;
     },
 
-    async session({ session, token }:any) {
+    async session({ session, token }) {
       if (token.sub && session.user) {
         session.user.id = token.sub;
         
-        // Get user role and additional info from database
         const user = await prisma.utilisateur.findUnique({
           where: { idUtilisateur: token.sub },
           select: { 
@@ -134,14 +137,13 @@ export const authOptions = {
       return session;
     },
 
-    async jwt({ token, user, account }: any) {
+    async jwt({ token, user, account }) {
       // On sign in
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = (user as User).role;
       }
       
-      // For OAuth, get the user ID
       if (account?.provider === "google" && user?.email) {
         const dbUser = await prisma.utilisateur.findUnique({
           where: { email: user.email },
@@ -157,20 +159,17 @@ export const authOptions = {
       return token;
     },
     
-    async redirect({ url, baseUrl }: any) {
-      // If url is provided and starts with base URL, use it
+    async redirect({ url, baseUrl }) {
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      
-      // Always redirect to dashboard after authentication
       return `${baseUrl}/dashboard`;
     },
   },
   
   pages: {
-    signIn: "/worker/sign-in", // Default sign-in page
-    error: "/worker/sign-in",  // Error page
+    signIn: "/worker/sign-in",
+    error: "/worker/sign-in", 
   },
   
   session: {

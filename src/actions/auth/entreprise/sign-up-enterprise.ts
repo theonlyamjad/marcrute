@@ -56,26 +56,86 @@ export async function signUpEnterpriseAction(
       },
     });
 
-    // Envoie l'email via Nodemailer
-    await transporter.sendMail({
-      from: `"MARcrute" <${process.env.EMAIL_SERVER_USER}>`,
-      to: email,
-      subject: "Confirmez votre email - MARcrute",
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <h2 style="color: #4CAF50;">Bienvenue sur MARcrute, ${companyName} !</h2>
-          <p>Merci de vous être inscrit en tant qu'entreprise.</p>
-          <p>Pour commencer, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :</p>
-          <a href="${process.env.NEXTAUTH_URL}/api/auth/entreprise/verify-email?token=${token}" 
-            style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin-top: 10px;">
-            Vérifier mon email
-          </a>
-          <p style="margin-top: 20px; font-size: 0.9em; color: #777;">
-            Si vous n'avez pas créé de compte, ignorez cet email.
-          </p>
-        </div>
-      `,
-    });
+await transporter.sendMail({
+  from: `"MARcrute" <${process.env.EMAIL_SERVER_USER}>`,
+  to: email,
+  subject: "Confirmation de votre adresse email – MARcrute",
+  html: `
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8; padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.05); font-family:Arial, Helvetica, sans-serif;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1D546D; padding:24px 32px;">
+              <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:600;">
+                MARcrute
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding:32px;">
+              <h2 style="margin-top:0; color:#1D546D; font-size:20px;">
+                Bienvenue ${companyName},
+              </h2>
+
+              <p style="font-size:15px; color:#333333; line-height:1.6;">
+                Merci de vous être inscrit sur <strong>MARcrute</strong> en tant qu’entreprise.
+                Afin d’activer votre compte et sécuriser votre accès, veuillez confirmer votre adresse email.
+              </p>
+
+              <!-- Button -->
+              <table cellpadding="0" cellspacing="0" style="margin:28px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${process.env.NEXTAUTH_URL}/api/auth/entreprise/verify-email?token=${token}"
+                      style="
+                        background-color:#5F9598;
+                        color:#ffffff;
+                        text-decoration:none;
+                        padding:14px 28px;
+                        font-size:15px;
+                        font-weight:600;
+                        border-radius:6px;
+                        display:inline-block;
+                      ">
+                      Vérifier mon adresse email
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:14px; color:#555555; line-height:1.6;">
+                Ce lien est valable pendant <strong>24 heures</strong>.
+                Si vous n’êtes pas à l’origine de cette inscription, vous pouvez ignorer cet email.
+              </p>
+
+              <p style="font-size:14px; color:#555555; margin-top:32px;">
+                Cordialement,<br />
+                <strong>L’équipe MARcrute</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f0f3f5; padding:20px 32px; text-align:center;">
+              <p style="margin:0; font-size:12px; color:#777777;">
+                © ${new Date().getFullYear()} MARcrute. Tous droits réservés.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+  `,
+});
+
 
     // Redirection vers la page de login entreprise
     return { success: true, redirectTo: "/enterprise/sign-in" };

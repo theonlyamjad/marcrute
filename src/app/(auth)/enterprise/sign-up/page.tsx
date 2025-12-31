@@ -65,9 +65,7 @@ const SignupPage = () => {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/dashboard" })
-  }
+
 
 return (
   <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
@@ -138,13 +136,7 @@ return (
                 >
                   {isLoading ? "Création..." : "Créer mon compte entreprise"}
                 </Button>
-
-                <OAuth
-                  text_1="Continuer avec Google"
-                  text_2="Continuer avec Microsoft"
-                  onGoogleClick={handleGoogleSignIn}
-                />
-
+                
                 <p className="text-center text-sm text-slate-600">
                   Déjà inscrit ?{" "}
                   <Link
