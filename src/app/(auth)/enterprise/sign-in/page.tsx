@@ -150,7 +150,7 @@ const SignInEntreprisePage = () => {
         </div>
 
         {/* IMAGE */}
-        <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-cyan-50 to-sky-100 p-8">
+        <div className="hidden lg:flex items-center justify-center bg-linear-to-br from-cyan-50 to-sky-100 p-8">
           <Image
             src={img_sign_in_entreprise}
             alt="Connexion entreprise"
