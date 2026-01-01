@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file
+// UPDATED VERSION - Numeric IDs for Categories
 
 generator client {
   provider = "prisma-client-js"
@@ -7,53 +7,51 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-   url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 // ========================================
-// UTILISATEURS - Table principale d'authentification
+// UTILISATEURS
 // ========================================
 
 model Utilisateur {
-  idUtilisateur     String         @id @default(cuid()) @map("id_utilisateur")
-  email             String         @unique
-  emailVerified     DateTime?      @map("email_verified")
-  hashMotDePasse    String?        @map("hash_mot_de_passe") // Nullable for OAuth users
-  role              String         // Administrateur, Travailleur, Institution
-  nomComplet        String?        @map("nom_complet")
-  telephone         String?
-  dateCreation      DateTime       @default(now()) @map("date_creation")
-  dateModification  DateTime       @updatedAt @map("date_modification")
-
-  travailleur       Travailleur?
-  institution       Institution?
-  administrateur    Administrateur?
+  idUtilisateur    String          @id @default(cuid()) @map("id_utilisateur")
+  email            String          @unique
+  emailVerified    DateTime?       @map("email_verified")
+  hashMotDePasse   String?         @map("hash_mot_de_passe")
+  role             String
+  nomComplet       String?         @map("nom_complet")
+  telephone        String?
+  dateCreation     DateTime        @default(now()) @map("date_creation")
+  dateModification DateTime        @updatedAt @map("date_modification")
   
-  // Auth.js required relations
-  accounts          Account[]
-  sessions          Session[]
+  accounts       Account[]
+  sessions       Session[]
+  administrateur Administrateur?
+  institution    Institution?
+  travailleur    Travailleur?
 
   @@map("utilisateurs")
 }
 
 // ========================================
-// AUTH.JS REQUIRED MODELS
+// AUTH.JS MODELS
 // ========================================
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String  @map("user_id")
+  id                String      @id @default(cuid())
+  userId            String      @map("user_id")
   type              String
   provider          String
-  providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  providerAccountId String      @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
+  
   user Utilisateur @relation(fields: [userId], references: [idUtilisateur], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
@@ -85,18 +83,18 @@ model VerificationToken {
 // ========================================
 
 model Travailleur {
-  idTravailleur         String           @id @default(cuid()) @map("id_travailleur")
-  idUtilisateur         String           @unique @map("id_utilisateur")
-  idVille               String?          @map("id_ville")
-  biographie            String?          @db.Text
-  anneesExperience      Int?             @map("annees_experience")
-  statutLabel           String?          @map("statut_label")
-  dateLabel             DateTime?        @map("date_label")
-  noteMoyenne           Decimal?         @map("note_moyenne") @db.Decimal(3, 2)
-  dateCreation          DateTime         @default(now()) @map("date_creation")
-
-  utilisateur           Utilisateur      @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
-  ville                 Ville?           @relation(fields: [idVille], references: [idVille])
+  idTravailleur         String          @id @default(cuid()) @map("id_travailleur")
+  idUtilisateur         String          @unique @map("id_utilisateur")
+  idVille               String?         @map("id_ville")
+  biographie            String?
+  anneesExperience      Int?            @map("annees_experience")
+  statutLabel           String?         @map("statut_label")
+  dateLabel             DateTime?       @map("date_label")
+  noteMoyenne           Decimal?        @map("note_moyenne") @db.Decimal(3, 2)
+  dateCreation          DateTime        @default(now()) @map("date_creation")
+  
+  utilisateur           Utilisateur     @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  ville                 Ville?          @relation(fields: [idVille], references: [idVille])
   experiences           Experience[]
   diplomes              Diplome[]
   specialites           Specialite[]
@@ -104,44 +102,45 @@ model Travailleur {
   candidatures          Candidature[]
   evaluations           Evaluation[]
   validations           Validation[]
-  signalementsEmis      Signalement[]    @relation("TravailleurEmetteur")
-  signalementsConcernes Signalement[]    @relation("TravailleurConcerne")
+  signalementsEmis      Signalement[]   @relation("TravailleurEmetteur")
+  signalementsConcernes Signalement[]   @relation("TravailleurConcerne")
 
   @@map("travailleurs")
 }
 
 model Institution {
-  idInstitution         String           @id @default(cuid()) @map("id_institution")
-  idUtilisateur         String           @unique @map("id_utilisateur")
-  idVille               String?          @map("id_ville")
-  nomInstitution        String           @map("nom_institution")
+  idInstitution         String                  @id @default(cuid()) @map("id_institution")
+  idUtilisateur         String                  @unique @map("id_utilisateur")
+  idVille               String?                 @map("id_ville")
+  nomInstitution        String                  @map("nom_institution")
   adresse               String?
   localisation          String?
   url                   String?
-  telephoneInstitution  String?          @map("telephone_institution")
-  siteWeb               String?          @map("site_web")
-  dateCreation          DateTime         @default(now()) @map("date_creation")
-
-  utilisateur           Utilisateur      @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
-  ville                 Ville?           @relation(fields: [idVille], references: [idVille])
+  telephoneInstitution  String?                 @map("telephone_institution")
+  siteWeb               String?                 @map("site_web")
+  dateCreation          DateTime                @default(now()) @map("date_creation")
+  
+  utilisateur           Utilisateur             @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  ville                 Ville?                  @relation(fields: [idVille], references: [idVille])
+  specialites           SpecialiteInstitution[]
   missions              Mission[]
   evaluations           Evaluation[]
   validations           Validation[]
-  signalementsEmis      Signalement[]    @relation("InstitutionEmetteur")
-  signalementsConcernes Signalement[]    @relation("InstitutionConcerne")
+  signalementsEmis      Signalement[]           @relation("InstitutionEmetteur")
+  signalementsConcernes Signalement[]           @relation("InstitutionConcerne")
 
   @@map("institutions")
 }
 
 model Administrateur {
-  idAdministrateur  String       @id @default(cuid()) @map("id_administrateur")
-  idUtilisateur     String       @unique @map("id_utilisateur")
-  permissions       String?      @db.Text
-  dateCreation      DateTime     @default(now()) @map("date_creation")
-
-  utilisateur       Utilisateur  @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
-  validations       Validation[]
-  signalements      Signalement[]
+  idAdministrateur String        @id @default(cuid()) @map("id_administrateur")
+  idUtilisateur    String        @unique @map("id_utilisateur")
+  permissions      String?
+  dateCreation     DateTime      @default(now()) @map("date_creation")
+  
+  utilisateur  Utilisateur   @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  signalements Signalement[]
+  validations  Validation[]
 
   @@map("administrateurs")
 }
@@ -151,27 +150,43 @@ model Administrateur {
 // ========================================
 
 model Region {
-  idRegion      String    @id @default(cuid()) @map("id_region")
-  nomRegion     String    @map("nom_region")
-  dateCreation  DateTime  @default(now()) @map("date_creation")
-
-  villes        Ville[]
+  idRegion     String   @id @default(cuid()) @map("id_region")
+  nomRegion    String   @map("nom_region")
+  dateCreation DateTime @default(now()) @map("date_creation")
+  
+  villes Ville[]
 
   @@map("regions")
 }
 
 model Ville {
-  idVille       String        @id @default(cuid()) @map("id_ville")
-  idRegion      String        @map("id_region")
-  nomVille      String        @map("nom_ville")
-  codePostal    String?       @map("code_postal")
-  dateCreation  DateTime      @default(now()) @map("date_creation")
-
-  region        Region        @relation(fields: [idRegion], references: [idRegion])
-  travailleurs  Travailleur[]
-  institutions  Institution[]
+  idVille      String        @id @default(cuid()) @map("id_ville")
+  idRegion     String        @map("id_region")
+  nomVille     String        @map("nom_ville")
+  codePostal   String?       @map("code_postal")
+  dateCreation DateTime      @default(now()) @map("date_creation")
+  
+  region       Region        @relation(fields: [idRegion], references: [idRegion])
+  institutions Institution[]
+  travailleurs Travailleur[]
 
   @@map("villes")
+}
+
+// ========================================
+// CATÉGORIES DE SPÉCIALITÉS (Reference Table)
+// ========================================
+
+model CategorieSpecialite {
+  id           Int      @id
+  name         String   @db.VarChar(100)
+  dateCreation DateTime @default(now()) @map("date_creation")
+
+  specialitesTravailleur  Specialite[]
+  specialitesInstitution  SpecialiteInstitution[]
+  specialitesRequises     SpecialiteRequise[]
+
+  @@map("categories_specialites")
 }
 
 // ========================================
@@ -179,44 +194,60 @@ model Ville {
 // ========================================
 
 model Experience {
-  idExperience    String      @id @default(cuid()) @map("id_experience")
-  idTravailleur   String      @map("id_travailleur")
-  titrePoste      String?     @map("titre_poste")
-  organisation    String?
-  description     String?     @db.Text
-  dureeMois       Int?        @map("duree_mois")
-  dateDebut       DateTime?   @map("date_debut")
-  dateFin         DateTime?   @map("date_fin")
-
-  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  idExperience  String      @id @default(cuid()) @map("id_experience")
+  idTravailleur String      @map("id_travailleur")
+  titrePoste    String?     @map("titre_poste")
+  organisation  String?
+  description   String?
+  dureeMois     Int?        @map("duree_mois")
+  dateDebut     DateTime?   @map("date_debut")
+  dateFin       DateTime?   @map("date_fin")
+  
+  travailleur Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
 
   @@map("experiences")
 }
 
 model Diplome {
-  idDiplome         String      @id @default(cuid()) @map("id_diplome")
-  idTravailleur     String      @map("id_travailleur")
-  nomDiplome        String      @map("nom_diplome")
-  nomInstitution    String?     @map("nom_institution")
-  cheminFichier     String?     @map("chemin_fichier")
-  statut            String?
-  dateVerification  DateTime?   @map("date_verification")
-  dateCreation      DateTime    @default(now()) @map("date_creation")
-
-  travailleur       Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  idDiplome        String      @id @default(cuid()) @map("id_diplome")
+  idTravailleur    String      @map("id_travailleur")
+  nomDiplome       String      @map("nom_diplome")
+  nomInstitution   String?     @map("nom_institution")
+  cheminFichier    String?     @map("chemin_fichier")
+  statut           String?
+  dateVerification DateTime?   @map("date_verification")
+  dateCreation     DateTime    @default(now()) @map("date_creation")
+  
+  travailleur Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
 
   @@map("diplomes")
 }
 
 model Specialite {
-  idSpecialite    String      @id @default(cuid()) @map("id_specialite")
-  idTravailleur   String      @map("id_travailleur")
-  nomSpecialite   String      @map("nom_specialite")
-  niveau          String?
-
-  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  idSpecialite     String               @id @default(cuid()) @map("id_specialite")
+  idTravailleur    String               @map("id_travailleur")
+  nomSpecialite    String               @map("nom_specialite")
+  niveau           String?
+  idCategorie      Int?                 @map("id_categorie")
+  anneesExperience Int?                 @map("annees_experience")
+  
+  travailleur Travailleur          @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  categorie   CategorieSpecialite? @relation(fields: [idCategorie], references: [id])
 
   @@map("specialites")
+}
+
+model SpecialiteInstitution {
+  idSpecialite  String              @id @default(cuid()) @map("id_specialite")
+  idInstitution String              @map("id_institution")
+  idCategorie   Int                 @map("id_categorie")
+  estPrincipale Boolean             @default(false) @map("est_principale")
+  dateCreation  DateTime            @default(now()) @map("date_creation")
+  
+  institution Institution         @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+  categorie   CategorieSpecialite @relation(fields: [idCategorie], references: [id])
+
+  @@map("specialites_institutions")
 }
 
 model Disponibilite {
@@ -225,8 +256,8 @@ model Disponibilite {
   dateDisponible  DateTime    @map("date_disponible") @db.Date
   creneau         String
   estDisponible   Boolean     @default(true) @map("est_disponible")
-
-  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
+  
+  travailleur Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
 
   @@map("disponibilites")
 }
@@ -236,18 +267,18 @@ model Disponibilite {
 // ========================================
 
 model Mission {
-  idMission           String                @id @default(cuid()) @map("id_mission")
-  idInstitution       String                @map("id_institution")
+  idMission           String              @id @default(cuid()) @map("id_mission")
+  idInstitution       String              @map("id_institution")
   titre               String
-  description         String?               @db.Text
-  typePublic          String?               @map("type_public")
-  dateDebut           DateTime?             @map("date_debut")
-  dateFin             DateTime?             @map("date_fin")
+  description         String?
+  typePublic          String?             @map("type_public")
+  dateDebut           DateTime?           @map("date_debut")
+  dateFin             DateTime?           @map("date_fin")
   urgence             String?
   statut              String
-  dateCreation        DateTime              @default(now()) @map("date_creation")
-
-  institution         Institution           @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+  dateCreation        DateTime            @default(now()) @map("date_creation")
+  
+  institution         Institution         @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
   candidatures        Candidature[]
   specialitesRequises SpecialiteRequise[]
   validations         Validation[]
@@ -256,27 +287,31 @@ model Mission {
 }
 
 model SpecialiteRequise {
-  idSpecialiteRequise String  @id @default(cuid()) @map("id_specialite_requise")
-  idMission           String  @map("id_mission")
-  specialiteRequise   String  @map("specialite_requise")
-  anneesExperienceMin Int?    @map("annees_experience_min")
-
-  mission             Mission @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+  idSpecialiteRequise String               @id @default(cuid()) @map("id_specialite_requise")
+  idMission           String               @map("id_mission")
+  specialiteRequise   String               @map("specialite_requise")
+  anneesExperienceMin Int?                 @map("annees_experience_min")
+  idCategorie         Int?                 @map("id_categorie")
+  niveauRequis        String?              @map("niveau_requis") @db.VarChar(50)
+  estObligatoire      Boolean?             @default(true) @map("est_obligatoire")
+  
+  mission   Mission              @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+  categorie CategorieSpecialite? @relation(fields: [idCategorie], references: [id])
 
   @@map("specialites_requises")
 }
 
 model Candidature {
-  idCandidature       String      @id @default(cuid()) @map("id_candidature")
-  idTravailleur       String      @map("id_travailleur")
-  idMission           String      @map("id_mission")
-  dateCandidature     DateTime    @default(now()) @map("date_candidature")
-  statut              String
-  messageTravailleur  String?     @map("message_travailleur") @db.Text
-  dateReponse         DateTime?   @map("date_reponse")
-
-  travailleur         Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
-  mission             Mission     @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+  idCandidature      String      @id @default(cuid()) @map("id_candidature")
+  idTravailleur      String      @map("id_travailleur")
+  idMission          String      @map("id_mission")
+  dateCandidature    DateTime    @default(now()) @map("date_candidature")
+  statut             String
+  messageTravailleur String?     @map("message_travailleur")
+  dateReponse        DateTime?   @map("date_reponse")
+  
+  mission     Mission     @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+  travailleur Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
 
   @@map("candidatures")
 }
@@ -286,15 +321,15 @@ model Candidature {
 // ========================================
 
 model Evaluation {
-  idEvaluation    String      @id @default(cuid()) @map("id_evaluation")
-  idTravailleur   String      @map("id_travailleur")
-  idInstitution   String      @map("id_institution")
-  note            Int
-  commentaire     String?     @db.Text
-  dateCreation    DateTime    @default(now()) @map("date_creation")
-
-  travailleur     Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
-  institution     Institution @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+  idEvaluation  String      @id @default(cuid()) @map("id_evaluation")
+  idTravailleur String      @map("id_travailleur")
+  idInstitution String      @map("id_institution")
+  note          Int
+  commentaire   String?
+  dateCreation  DateTime    @default(now()) @map("date_creation")
+  
+  institution Institution @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+  travailleur Travailleur @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
 
   @@map("evaluations")
 }
@@ -304,20 +339,20 @@ model Evaluation {
 // ========================================
 
 model Validation {
-  idValidation      String          @id @default(cuid()) @map("id_validation")
-  idAdministrateur  String          @map("id_administrateur")
-  idTravailleur     String?         @map("id_travailleur")
-  idInstitution     String?         @map("id_institution")
-  idMission         String?         @map("id_mission")
-  typeValidation    String          @map("type_validation")
-  statut            String
-  notes             String?         @db.Text
-  dateCreation      DateTime        @default(now()) @map("date_creation")
-
-  administrateur    Administrateur  @relation(fields: [idAdministrateur], references: [idAdministrateur], onDelete: Cascade)
-  travailleur       Travailleur?    @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
-  institution       Institution?    @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
-  mission           Mission?        @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+  idValidation     String         @id @default(cuid()) @map("id_validation")
+  idAdministrateur String         @map("id_administrateur")
+  idTravailleur    String?        @map("id_travailleur")
+  idInstitution    String?        @map("id_institution")
+  idMission        String?        @map("id_mission")
+  typeValidation   String         @map("type_validation")
+  statut           String
+  notes            String?
+  dateCreation     DateTime       @default(now()) @map("date_creation")
+  
+  administrateur Administrateur @relation(fields: [idAdministrateur], references: [idAdministrateur], onDelete: Cascade)
+  institution    Institution?   @relation(fields: [idInstitution], references: [idInstitution], onDelete: Cascade)
+  mission        Mission?       @relation(fields: [idMission], references: [idMission], onDelete: Cascade)
+  travailleur    Travailleur?   @relation(fields: [idTravailleur], references: [idTravailleur], onDelete: Cascade)
 
   @@map("validations")
 }
@@ -327,24 +362,24 @@ model Validation {
 // ========================================
 
 model Signalement {
-  idSignalement           String          @id @default(cuid()) @map("id_signalement")
-  idAdministrateur        String?         @map("id_administrateur")
-  idTravailleurEmetteur   String?         @map("id_travailleur_emetteur")
-  idInstitutionEmetteur   String?         @map("id_institution_emetteur")
-  idTravailleurConcerne   String?         @map("id_travailleur_concerne")
-  idInstitutionConcerne   String?         @map("id_institution_concerne")
-  motif                   String
-  description             String          @db.Text
-  statut                  String
-  dateSignalement         DateTime        @default(now()) @map("date_signalement")
-  dateTraitement          DateTime?       @map("date_traitement")
-  reponseAdmin            String?         @map("reponse_admin") @db.Text
-
-  administrateur          Administrateur? @relation(fields: [idAdministrateur], references: [idAdministrateur])
-  travailleurEmetteur     Travailleur?    @relation("TravailleurEmetteur", fields: [idTravailleurEmetteur], references: [idTravailleur])
-  institutionEmetteur     Institution?    @relation("InstitutionEmetteur", fields: [idInstitutionEmetteur], references: [idInstitution])
-  travailleurConcerne     Travailleur?    @relation("TravailleurConcerne", fields: [idTravailleurConcerne], references: [idTravailleur])
-  institutionConcerne     Institution?    @relation("InstitutionConcerne", fields: [idInstitutionConcerne], references: [idInstitution])
+  idSignalement         String          @id @default(cuid()) @map("id_signalement")
+  idAdministrateur      String?         @map("id_administrateur")
+  idTravailleurEmetteur String?         @map("id_travailleur_emetteur")
+  idInstitutionEmetteur String?         @map("id_institution_emetteur")
+  idTravailleurConcerne String?         @map("id_travailleur_concerne")
+  idInstitutionConcerne String?         @map("id_institution_concerne")
+  motif                 String
+  description           String
+  statut                String
+  dateSignalement       DateTime        @default(now()) @map("date_signalement")
+  dateTraitement        DateTime?       @map("date_traitement")
+  reponseAdmin          String?         @map("reponse_admin")
+  
+  administrateur      Administrateur? @relation(fields: [idAdministrateur], references: [idAdministrateur])
+  institutionConcerne Institution?    @relation("InstitutionConcerne", fields: [idInstitutionConcerne], references: [idInstitution])
+  institutionEmetteur Institution?    @relation("InstitutionEmetteur", fields: [idInstitutionEmetteur], references: [idInstitution])
+  travailleurConcerne Travailleur?    @relation("TravailleurConcerne", fields: [idTravailleurConcerne], references: [idTravailleur])
+  travailleurEmetteur Travailleur?    @relation("TravailleurEmetteur", fields: [idTravailleurEmetteur], references: [idTravailleur])
 
   @@map("signalements")
 }
