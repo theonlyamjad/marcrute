@@ -87,9 +87,9 @@ return (
       <div className="p-6 sm:p-10 flex flex-col">
 
         <div className="mb-6">
-          <Link href="/" className="text-xl font-black text-[#1D546D]">
-            MARcrute
-          </Link>
+            <Link href="/" className="font-black text-3xl text-[#5F9598]">
+              MARcrute
+            </Link>
         </div>
 
         <div className="flex flex-1 items-center justify-center">

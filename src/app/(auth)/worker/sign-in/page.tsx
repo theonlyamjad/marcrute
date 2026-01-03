@@ -81,7 +81,7 @@ const SignInPage = () => {
         <div className="p-6 sm:p-10 flex flex-col">
           {/* LOGO */}
           <div className="mb-6">
-            <Link href="/" className="text-xl font-black text-[#1D546D]">
+            <Link href="/" className="font-black text-3xl text-[#5F9598]">
               MARcrute
             </Link>
           </div>
