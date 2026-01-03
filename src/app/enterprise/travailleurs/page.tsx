@@ -2,8 +2,7 @@
 
     import React, { useState, useEffect } from 'react';
     import { 
-    Search, MapPin, Star, Award, Calendar, Filter, 
-    ChevronRight, Briefcase, GraduationCap, CheckCircle2, X, Loader2
+    Search, MapPin, Star, Award, Filter,  GraduationCap, CheckCircle2, X, Loader2
     } from 'lucide-react';
 
     import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
