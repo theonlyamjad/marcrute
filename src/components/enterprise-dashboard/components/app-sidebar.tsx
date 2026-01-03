@@ -8,7 +8,6 @@ import {
   IconFileAi,
   IconFileDescription,
   IconFileWord,
-  IconInnerShadowTop,
   IconReport,
 } from "@tabler/icons-react";
 
@@ -53,13 +52,13 @@ const data = {
       icon: Briefcase
     },
     {
-      title: "Applications",
-      url: "/enterprise/applications",
+      title: "Candidature",
+      url: "/enterprise/candidature",
       icon: Inbox
     },
     {
-      title: "Workers",
-      url: "/enterprise/workers",
+      title: "Travailleurs",
+      url: "/enterprise/travailleurs",
       icon: Users 
     },
     {
@@ -73,7 +72,7 @@ const data = {
       icon: Flag
     },
     {
-      title: "Settings",
+      title: "Paramètre",
       url: "/enterprise/settings",
       icon: Cog
     },
