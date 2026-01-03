@@ -1,10 +1,21 @@
-import React, { JSX } from 'react';
+"use client";
+
+import React, { JSX, useState, useEffect } from 'react';
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/app-sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Briefcase, Clock, Star, TrendingUp, AlertCircle, Calendar } from 'lucide-react';
+import { Briefcase, Clock, Star, TrendingUp, AlertCircle, Calendar, Loader2 } from 'lucide-react';
+import { 
+  getDashboardStats, 
+  getMissionsTrend, 
+  getCandidaturesStatus, 
+  getRecentCandidatures, 
+  getActiveMissions, 
+  getRecentSignalements 
+} from '@/actions/enterprise/dashboard';
+import { toast } from 'sonner';
 
 // Types TypeScript
 interface Stats {
@@ -56,125 +67,6 @@ interface Signalement {
   statut: string;
 }
 
-// Données simulées avec types
-const mockData: {
-  stats: Stats;
-  missionsTrend: MissionTrend[];
-  candidaturesStatus: CandidatureStatus[];
-  recentCandidatures: Candidature[];
-  activeMissions: Mission[];
-  signalements: Signalement[];
-} = {
-  stats: {
-    totalMissions: 42,
-    activeMissions: 15,
-    pendingMissions: 8,
-    completedMissions: 19,
-    pendingCandidatures: 23,
-    averageRating: 4.6,
-    monthlyMissions: 12
-  },
-  missionsTrend: [
-    { mois: 'Jan', missions: 8, acceptees: 6 },
-    { mois: 'Fév', missions: 10, acceptees: 8 },
-    { mois: 'Mar', missions: 12, acceptees: 10 },
-    { mois: 'Avr', missions: 9, acceptees: 7 },
-    { mois: 'Mai', missions: 15, acceptees: 12 },
-    { mois: 'Jun', missions: 12, acceptees: 11 }
-  ],
-  candidaturesStatus: [
-    { name: 'En attente', value: 23, color: '#F3A712' },
-    { name: 'Acceptées', value: 45, color: '#5F9598' },
-    { name: 'Refusées', value: 12, color: '#D64545' }
-  ],
-  recentCandidatures: [
-    {
-      id: '1',
-      travailleur: 'Dr. Ahmed Benali',
-      mission: 'Psychologue clinicien',
-      date: '2025-01-02',
-      statut: 'En attente',
-      specialites: ['Psychologie clinique', 'Thérapie cognitive']
-    },
-    {
-      id: '2',
-      travailleur: 'Fatima Zahra',
-      mission: 'Éducateur spécialisé',
-      date: '2025-01-01',
-      statut: 'En attente',
-      specialites: ['Éducation spécialisée', 'Autisme']
-    },
-    {
-      id: '3',
-      travailleur: 'Omar Idrissi',
-      mission: 'Assistant social',
-      date: '2024-12-30',
-      statut: 'Acceptée',
-      specialites: ['Travail social', 'Intervention familiale']
-    },
-    {
-      id: '4',
-      travailleur: 'Samira El Amrani',
-      mission: 'Psychologue scolaire',
-      date: '2024-12-29',
-      statut: 'En attente',
-      specialites: ['Psychologie scolaire', 'Orientation']
-    },
-    {
-      id: '5',
-      travailleur: 'Youssef Tazi',
-      mission: 'Orthophoniste',
-      date: '2024-12-28',
-      statut: 'En attente',
-      specialites: ['Orthophonie', 'Troubles du langage']
-    }
-  ],
-  activeMissions: [
-    {
-      id: '1',
-      titre: 'Psychologue pour centre d\'accueil',
-      dateDebut: '2025-01-15',
-      dateFin: '2025-06-15',
-      candidatures: 8,
-      urgence: 'Haute',
-      progression: 60
-    },
-    {
-      id: '2',
-      titre: 'Éducateur spécialisé - Urgence',
-      dateDebut: '2025-01-05',
-      dateFin: '2025-03-05',
-      candidatures: 12,
-      urgence: 'Urgente',
-      progression: 75
-    },
-    {
-      id: '3',
-      titre: 'Assistant social polyvalent',
-      dateDebut: '2025-02-01',
-      dateFin: '2025-07-01',
-      candidatures: 5,
-      urgence: 'Normale',
-      progression: 30
-    }
-  ],
-  signalements: [
-    {
-      id: '1',
-      motif: 'Retard répété',
-      concerne: 'Mohamed Alami',
-      date: '2024-12-28',
-      statut: 'En cours'
-    },
-    {
-      id: '2',
-      motif: 'Non-respect du protocole',
-      concerne: 'Institution partenaire',
-      date: '2024-12-25',
-      statut: 'Résolu'
-    }
-  ]
-};
 
 interface StatCardProps {
   title: string;
@@ -228,6 +120,81 @@ const getUrgenceBadge = (urgence: string): JSX.Element => {
 };
 
 export default function InstitutionDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [missionsTrend, setMissionsTrend] = useState<MissionTrend[]>([]);
+  const [candidaturesStatus, setCandidaturesStatus] = useState<CandidatureStatus[]>([]);
+  const [recentCandidatures, setRecentCandidatures] = useState<Candidature[]>([]);
+  const [activeMissions, setActiveMissions] = useState<Mission[]>([]);
+  const [signalements, setSignalements] = useState<Signalement[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [
+          statsResult,
+          trendResult,
+          statusResult,
+          candidaturesResult,
+          missionsResult,
+          signalementsResult,
+        ] = await Promise.all([
+          getDashboardStats(),
+          getMissionsTrend(),
+          getCandidaturesStatus(),
+          getRecentCandidatures(5),
+          getActiveMissions(5),
+          getRecentSignalements(5),
+        ]);
+
+        if (statsResult.success && statsResult.data) {
+          setStats(statsResult.data);
+        }
+        if (trendResult.success && trendResult.data) {
+          setMissionsTrend(trendResult.data);
+        }
+        if (statusResult.success && statusResult.data) {
+          setCandidaturesStatus(statusResult.data);
+        }
+        if (candidaturesResult.success && candidaturesResult.data) {
+          setRecentCandidatures(candidaturesResult.data);
+        }
+        if (missionsResult.success && missionsResult.data) {
+          setActiveMissions(missionsResult.data);
+        }
+        if (signalementsResult.success && signalementsResult.data) {
+          setSignalements(signalementsResult.data);
+        }
+      } catch (error) {
+        toast.error("Erreur lors du chargement des données");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  if (loading || !stats) {
+    return (
+      <SidebarProvider
+        style={{
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties}>
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <div className="flex flex-1 flex-col items-center justify-center p-6 md:p-8 bg-[#F3F4F4]">
+            <Loader2 className="h-8 w-8 animate-spin text-[#1D546D] mb-4" />
+            <p className="text-[#5F9598] text-lg">Chargement du tableau de bord...</p>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    );
+  }
+
   return (
     <SidebarProvider
       style={{
@@ -248,30 +215,28 @@ export default function InstitutionDashboard() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Missions actives"
-              value={mockData.stats.activeMissions}
-              subtitle={`${mockData.stats.totalMissions} au total`}
+              value={stats.activeMissions}
+              subtitle={`${stats.totalMissions} au total`}
               icon={Briefcase}
-              trend="+12% ce mois"
               bgColor="bg-[#1D546D]"
             />
             <StatCard
               title="Candidatures en attente"
-              value={mockData.stats.pendingCandidatures}
+              value={stats.pendingCandidatures}
               subtitle="Nécessitent une réponse"
               icon={Clock}
               bgColor="bg-[#5F9598]"
             />
             <StatCard
               title="Missions ce mois"
-              value={mockData.stats.monthlyMissions}
-              subtitle={`${mockData.stats.completedMissions} terminées`}
+              value={stats.monthlyMissions}
+              subtitle={`${stats.completedMissions} terminées`}
               icon={Calendar}
-              trend="+8% vs mois dernier"
               bgColor="bg-[#1D546D]"
             />
             <StatCard
               title="Note moyenne"
-              value={mockData.stats.averageRating}
+              value={stats.averageRating.toFixed(1)}
               subtitle="Sur 5 étoiles"
               icon={Star}
               bgColor="bg-[#5F9598]"
@@ -288,7 +253,7 @@ export default function InstitutionDashboard() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={mockData.missionsTrend}>
+                  <LineChart data={missionsTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                     <XAxis dataKey="mois" stroke="#5F9598" />
                     <YAxis stroke="#5F9598" />
@@ -317,7 +282,7 @@ export default function InstitutionDashboard() {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={mockData.candidaturesStatus}
+                      data={candidaturesStatus}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -326,7 +291,7 @@ export default function InstitutionDashboard() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {mockData.candidaturesStatus.map((entry, index) => (
+                      {candidaturesStatus.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -351,7 +316,8 @@ export default function InstitutionDashboard() {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                {mockData.recentCandidatures.map((candidature) => (
+                {recentCandidatures.length > 0 ? (
+                  recentCandidatures.map((candidature) => (
                   <div key={candidature.id} className="flex items-center justify-between p-5 border-2 border-[#5F9598] border-opacity-20 rounded-xl  hover:bg-opacity-5 transition-all duration-300 hover:shadow-md">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-3">
@@ -371,7 +337,10 @@ export default function InstitutionDashboard() {
                       {new Date(candidature.date).toLocaleDateString('fr-FR')}
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-center text-[#5F9598] py-8">Aucune candidature récente</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -384,7 +353,8 @@ export default function InstitutionDashboard() {
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                {mockData.activeMissions.map((mission) => (
+                {activeMissions.length > 0 ? (
+                  activeMissions.map((mission) => (
                   <div key={mission.id} className="p-5 border-2 border-[#1D546D] border-opacity-20 rounded-xl space-y-4 hover:shadow-md transition-all duration-300 bg-white">
                     <div className="flex items-start justify-between">
                       <div className="space-y-2 flex-1">
@@ -413,7 +383,10 @@ export default function InstitutionDashboard() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-center text-[#5F9598] py-8">Aucune mission active</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -433,7 +406,8 @@ export default function InstitutionDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockData.signalements.map((signalement) => (
+                {signalements.length > 0 ? (
+                  signalements.map((signalement) => (
                   <div key={signalement.id} className="flex items-center justify-between p-4 border-2 border-orange-200 rounded-xl bg-orange-50 bg-opacity-30 hover:shadow-md transition-all duration-300">
                     <div className="space-y-1">
                       <div className="flex items-center gap-3">
@@ -446,7 +420,10 @@ export default function InstitutionDashboard() {
                       {new Date(signalement.date).toLocaleDateString('fr-FR')}
                     </div>
                   </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-center text-[#5F9598] py-8">Aucun signalement</p>
+                )}
               </div>
             </CardContent>
           </Card>

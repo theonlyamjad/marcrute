@@ -1,13 +1,15 @@
 import Image from "next/image"
-import image_enterprise from '../../../../public/assets/images/enterprise/Hiring-amico.png'
+import { useSession } from "next-auth/react"
+import { Building2 } from "lucide-react";
 const SidebarNav = () => {
+  const {data:session} = useSession();
   return (
     <div className="p-2 flex items-center justify-center flex-col gap-2">
-      <div className="border-2 rounded-md">
-        <Image src={image_enterprise} alt="image_de_enterprise" height={100}/>
+      <div className="rounded-md">
+        <Building2 size={70}/>
       </div>
       <div>
-        <h4>Nom de l&apos;entreprise</h4>
+        <h2 className="font-bold text-lg">{session?.user?.name}</h2>
       </div>
     </div>
   )

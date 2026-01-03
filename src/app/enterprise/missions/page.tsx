@@ -1,41 +1,70 @@
-"use client"
-import React, { JSX, useState } from 'react';
-import { AppSidebar } from '@/components/enterprise-dashboard/components/app-sidebar';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+"use client";
+import React, { JSX, useState, useEffect } from "react";
+import { AppSidebar } from "@/components/enterprise-dashboard/components/app-sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Plus, MoreVertical, Edit, Trash2, Eye, Filter, Search, Calendar, Users } from 'lucide-react';
+} from "@/components/ui/dropdown-menu";
+import {
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Eye,
+  Filter,
+  Search,
+  Calendar as CalendarIcon,
+  Loader2,
+} from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import {
+  getMissions,
+  createMission,
+  updateMission,
+  deleteMission,
+  getSpecialtyCategories,
+} from "@/actions/enterprise/missions";
+import { toast } from "sonner";
 
 // Types TypeScript
 interface SpecialiteRequise {
   specialiteRequise: string;
   anneesExperienceMin: number;
+  idCategorie?: number | null;
+}
+
+interface SpecialtyCategory {
+  id: number;
+  name: string;
 }
 
 interface Mission {
@@ -45,125 +74,53 @@ interface Mission {
   typePublic: string;
   dateDebut: string;
   dateFin: string;
-  urgence: 'Normale' | 'Haute' | 'Urgente';
-  statut: 'Brouillon' | 'Active' | 'Terminée' | 'Annulée';
+  urgence: "Normale" | "Haute" | "Urgente";
+  statut: "Brouillon" | "Active" | "Terminée" | "Annulée";
   specialitesRequises: SpecialiteRequise[];
   nombreCandidatures: number;
   dateCreation: string;
 }
 
-// Données mockées
-const mockMissions: Mission[] = [
-  {
-    id: '1',
-    titre: 'Psychologue pour centre d\'accueil',
-    description: 'Nous recherchons un psychologue clinicien pour accompagner des enfants en difficulté dans notre centre d\'accueil. Missions incluant évaluations psychologiques et thérapies individuelles.',
-    typePublic: 'Enfants',
-    dateDebut: '2025-02-15',
-    dateFin: '2025-08-15',
-    urgence: 'Haute',
-    statut: 'Active',
-    specialitesRequises: [
-      { specialiteRequise: 'Psychologie clinique', anneesExperienceMin: 3 },
-      { specialiteRequise: 'Thérapie cognitive', anneesExperienceMin: 2 }
-    ],
-    nombreCandidatures: 8,
-    dateCreation: '2025-01-10'
-  },
-  {
-    id: '2',
-    titre: 'Éducateur spécialisé - Urgence',
-    description: 'Besoin urgent d\'un éducateur spécialisé pour accompagner des adolescents en situation de décrochage scolaire.',
-    typePublic: 'Adolescents',
-    dateDebut: '2025-01-20',
-    dateFin: '2025-06-20',
-    urgence: 'Urgente',
-    statut: 'Active',
-    specialitesRequises: [
-      { specialiteRequise: 'Éducation spécialisée', anneesExperienceMin: 5 }
-    ],
-    nombreCandidatures: 12,
-    dateCreation: '2025-01-05'
-  },
-  {
-    id: '3',
-    titre: 'Assistant social polyvalent',
-    description: 'Mission d\'accompagnement social pour familles en difficulté, incluant orientation et suivi administratif.',
-    typePublic: 'Familles',
-    dateDebut: '2025-03-01',
-    dateFin: '2025-09-01',
-    urgence: 'Normale',
-    statut: 'Active',
-    specialitesRequises: [
-      { specialiteRequise: 'Travail social', anneesExperienceMin: 2 }
-    ],
-    nombreCandidatures: 5,
-    dateCreation: '2025-01-15'
-  },
-  {
-    id: '4',
-    titre: 'Orthophoniste pédiatrique',
-    description: 'Recherche orthophoniste spécialisé en troubles du langage chez l\'enfant.',
-    typePublic: 'Enfants',
-    dateDebut: '2025-02-01',
-    dateFin: '2025-07-01',
-    urgence: 'Normale',
-    statut: 'Brouillon',
-    specialitesRequises: [
-      { specialiteRequise: 'Orthophonie', anneesExperienceMin: 3 }
-    ],
-    nombreCandidatures: 0,
-    dateCreation: '2025-01-20'
-  },
-  {
-    id: '5',
-    titre: 'Psychomotricien pour personnes âgées',
-    description: 'Accompagnement psychomoteur de personnes âgées en établissement.',
-    typePublic: 'Personnes âgées',
-    dateDebut: '2024-10-01',
-    dateFin: '2024-12-31',
-    urgence: 'Normale',
-    statut: 'Terminée',
-    specialitesRequises: [
-      { specialiteRequise: 'Psychomotricité', anneesExperienceMin: 4 }
-    ],
-    nombreCandidatures: 15,
-    dateCreation: '2024-09-15'
-  }
-];
-
-const getStatusBadge = (statut: Mission['statut']): JSX.Element => {
-  const variants: Record<Mission['statut'], string> = {
-    'Brouillon': 'bg-gray-100 text-gray-800 border-gray-300',
-    'Active': 'bg-[#5F9598] bg-opacity-20 text-[#1D546D] border-[#5F9598]',
-    'Terminée': 'bg-green-100 text-green-800 border-green-300',
-    'Annulée': 'bg-red-100 text-red-800 border-red-300'
+const getStatusBadge = (statut: Mission["statut"]): JSX.Element => {
+  const variants: Record<Mission["statut"], string> = {
+    Brouillon: "bg-gray-100 text-gray-800 border-gray-300",
+    Active: "bg-[#5F9598] bg-opacity-20 text-[#1D546D] border-[#5F9598]",
+    Terminée: "bg-green-100 text-green-800 border-green-300",
+    Annulée: "bg-red-100 text-red-800 border-red-300",
   };
-  return <Badge className={`${variants[statut]} border font-medium`}>{statut}</Badge>;
+  return (
+    <Badge className={`${variants[statut]} border font-medium`}>{statut}</Badge>
+  );
 };
 
-const getUrgenceBadge = (urgence: Mission['urgence']): JSX.Element => {
-  const variants: Record<Mission['urgence'], string> = {
-    'Urgente': 'bg-red-100 text-red-800 border-red-300',
-    'Haute': 'bg-orange-100 text-orange-800 border-orange-300',
-    'Normale': 'bg-[#1D546D] bg-opacity-10 text-[#1D546D] border-[#1D546D]'
+const getUrgenceBadge = (urgence: Mission["urgence"]): JSX.Element => {
+  const variants: Record<Mission["urgence"], string> = {
+    Urgente: "bg-red-100 text-red-800 border-red-300",
+    Haute: "bg-orange-100 text-orange-800 border-orange-300",
+    Normale: "bg-[#1D546D] bg-opacity-10 text-[#1D546D] border-[#1D546D]",
   };
-  return <Badge className={`${variants[urgence]} border font-medium`}>{urgence}</Badge>;
+  return (
+    <Badge className={`${variants[urgence]} border font-medium`}>
+      {urgence}
+    </Badge>
+  );
 };
 
-const MissionCard: React.FC<{ mission: Mission; onEdit: () => void; onDelete: () => void; onViewCandidatures: () => void }> = ({
-  mission,
-  onEdit,
-  onDelete,
-  onViewCandidatures
-}) => {
+const MissionCard: React.FC<{
+  mission: Mission;
+  onEdit: () => void;
+  onDelete: () => void;
+  onViewCandidatures: () => void;
+}> = ({ mission, onEdit, onDelete, onViewCandidatures }) => {
   return (
     <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <CardTitle className="text-xl text-[#061E29]">{mission.titre}</CardTitle>
+              <CardTitle className="text-xl text-[#061E29]">
+                {mission.titre}
+              </CardTitle>
               {getStatusBadge(mission.statut)}
               {getUrgenceBadge(mission.urgence)}
             </div>
@@ -182,11 +139,17 @@ const MissionCard: React.FC<{ mission: Mission; onEdit: () => void; onDelete: ()
                 <Edit className="h-4 w-4 mr-2" />
                 Modifier
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onViewCandidatures} className="cursor-pointer">
+              <DropdownMenuItem
+                onClick={onViewCandidatures}
+                className="cursor-pointer"
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 Voir candidatures
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="cursor-pointer text-red-600">
+              <DropdownMenuItem
+                onClick={onDelete}
+                className="cursor-pointer text-red-600"
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Supprimer
               </DropdownMenuItem>
@@ -197,28 +160,35 @@ const MissionCard: React.FC<{ mission: Mission; onEdit: () => void; onDelete: ()
       <CardContent>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2 text-[#5F9598]">
-              <Calendar className="h-4 w-4" />
-              <span>Du {new Date(mission.dateDebut).toLocaleDateString('fr-FR')}</span>
-            </div>
-            <div className="flex items-center gap-2 text-[#5F9598]">
-              <Calendar className="h-4 w-4" />
-              <span>Au {new Date(mission.dateFin).toLocaleDateString('fr-FR')}</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-[#1D546D]" />
-            <span className="text-sm text-[#1D546D] font-medium">
-              Type de public: {mission.typePublic}
-            </span>
+            {mission.dateDebut && (
+              <div className="flex items-center gap-2 text-[#5F9598]">
+                <CalendarIcon className="h-4 w-4" />
+                <span>
+                  Du {new Date(mission.dateDebut).toLocaleDateString("fr-FR")}
+                </span>
+              </div>
+            )}
+            {mission.dateFin && (
+              <div className="flex items-center gap-2 text-[#5F9598]">
+                <CalendarIcon className="h-4 w-4" />
+                <span>
+                  Au {new Date(mission.dateFin).toLocaleDateString("fr-FR")}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-[#061E29]">Spécialités requises:</p>
+            <p className="text-xs font-semibold text-[#061E29]">
+              Spécialités requises:
+            </p>
             <div className="flex gap-2 flex-wrap">
               {mission.specialitesRequises.map((spec, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs bg-[#F3F4F4] text-[#1D546D] border-[#5F9598]">
+                <Badge
+                  key={idx}
+                  variant="outline"
+                  className="text-xs bg-[#F3F4F4] text-[#1D546D] border-[#5F9598]"
+                >
                   {spec.specialiteRequise} ({spec.anneesExperienceMin} ans min)
                 </Badge>
               ))}
@@ -228,11 +198,12 @@ const MissionCard: React.FC<{ mission: Mission; onEdit: () => void; onDelete: ()
           <div className="pt-4 border-t border-[#5F9598] border-opacity-20">
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#5F9598]">
-                {mission.nombreCandidatures} candidature{mission.nombreCandidatures !== 1 ? 's' : ''}
+                {mission.nombreCandidatures} candidature
+                {mission.nombreCandidatures !== 1 ? "s" : ""}
               </span>
-              <Button 
+              <Button
                 onClick={onViewCandidatures}
-                variant="outline" 
+                variant="outline"
                 size="sm"
                 className="border-[#1D546D] text-[#1D546D] hover:bg-[#1D546D] hover:text-white"
               >
@@ -246,100 +217,303 @@ const MissionCard: React.FC<{ mission: Mission; onEdit: () => void; onDelete: ()
   );
 };
 
-const MissionFormDialog: React.FC<{ mission?: Mission; onSave: (mission: Partial<Mission>) => void }> = ({ mission, onSave }) => {
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<Mission>>(mission || {
-    titre: '',
-    description: '',
-    typePublic: '',
-    dateDebut: '',
-    dateFin: '',
-    urgence: 'Normale',
-    statut: 'Brouillon',
-    specialitesRequises: []
+const MissionFormDialog: React.FC<{
+  mission?: Mission;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: () => void;
+}> = ({ mission, open, onOpenChange, onSave }) => {
+  const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [categories, setCategories] = useState<SpecialtyCategory[]>([]);
+  const [formData, setFormData] = useState<Partial<Mission>>({
+    titre: "",
+    description: "",
+    dateDebut: "",
+    dateFin: "",
+    urgence: "Normale",
+    statut: "Brouillon",
+    specialitesRequises: [],
   });
+  const [dateDebut, setDateDebut] = useState<Date | undefined>();
+  const [dateFin, setDateFin] = useState<Date | undefined>();
+  const [specialitePrincipale, setSpecialitePrincipale] = useState<{
+    idCategorie: number | null;
+    nom: string;
+  }>({ idCategorie: null, nom: "" });
+  const [anneesExperience, setAnneesExperience] = useState<number>(0);
 
-  const handleSubmit = () => {
-    onSave(formData);
-    setOpen(false);
+  // Charger les catégories de spécialités
+  useEffect(() => {
+    if (open) {
+      const loadCategories = async () => {
+        setLoadingCategories(true);
+        try {
+          const result = await getSpecialtyCategories();
+          if (result.success && result.data) {
+            setCategories(result.data);
+          }
+        } catch (error) {
+          console.error("Error loading categories:", error);
+        } finally {
+          setLoadingCategories(false);
+        }
+      };
+      loadCategories();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (mission && open) {
+      setFormData(mission);
+      // Définir les dates
+      setDateDebut(mission.dateDebut ? new Date(mission.dateDebut) : undefined);
+      setDateFin(mission.dateFin ? new Date(mission.dateFin) : undefined);
+      // Définir la spécialité principale si disponible
+      if (mission.specialitesRequises.length > 0) {
+        const premiereSpec = mission.specialitesRequises[0];
+        setSpecialitePrincipale({
+          idCategorie: premiereSpec.idCategorie || null,
+          nom: premiereSpec.specialiteRequise,
+        });
+        setAnneesExperience(premiereSpec.anneesExperienceMin || 0);
+      } else {
+        setSpecialitePrincipale({ idCategorie: null, nom: "" });
+        setAnneesExperience(0);
+      }
+    } else if (open) {
+      setFormData({
+        titre: "",
+        description: "",
+        dateDebut: "",
+        dateFin: "",
+        urgence: "Normale",
+        statut: "Brouillon",
+        specialitesRequises: [],
+      });
+      setDateDebut(undefined);
+      setDateFin(undefined);
+      setSpecialitePrincipale({ idCategorie: null, nom: "" });
+      setAnneesExperience(0);
+    }
+  }, [mission, open]);
+
+  const handleSpecialitePrincipaleChange = (categoryId: string) => {
+    const category = categories.find((c) => c.id.toString() === categoryId);
+    if (category) {
+      setSpecialitePrincipale({
+        idCategorie: category.id,
+        nom: category.name,
+      });
+      // Auto-remplir le titre basé sur la spécialité
+      if (!mission) {
+        setFormData({
+          ...formData,
+          titre: category.name,
+        });
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.titre) {
+      toast.error("Le titre est requis");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Créer la liste des spécialités avec uniquement la spécialité principale
+      const specialitesRequises = [];
+
+      // Ajouter la spécialité principale si elle existe
+      if (specialitePrincipale.idCategorie && specialitePrincipale.nom) {
+        specialitesRequises.push({
+          specialiteRequise: specialitePrincipale.nom,
+          anneesExperienceMin: anneesExperience,
+          idCategorie: specialitePrincipale.idCategorie,
+          estObligatoire: true,
+        });
+      }
+
+      const missionData = {
+        titre: formData.titre!,
+        description: formData.description || null,
+        typePublic: null,
+        dateDebut: dateDebut || null,
+        dateFin: dateFin || null,
+        urgence: formData.urgence || "Normale",
+        statut: formData.statut || "Brouillon",
+        specialitesRequises: specialitesRequises,
+      };
+
+      let result;
+      if (mission) {
+        result = await updateMission({ ...missionData, idMission: mission.id });
+      } else {
+        result = await createMission(missionData);
+      }
+
+      if (result.success) {
+        toast.success(
+          mission
+            ? "Mission mise à jour avec succès"
+            : "Mission créée avec succès"
+        );
+        onOpenChange(false);
+        onSave();
+      } else {
+        toast.error(result.error || "Une erreur est survenue");
+      }
+    } catch (error) {
+      toast.error("Une erreur est survenue");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {mission ? (
-          <Button variant="ghost" size="sm">
-            <Edit className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button className="bg-[#061E29] text-white">
-            <Plus className="h-4 w-4 mr-2" />
-            Créer nouvelle mission
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-[#061E29]">
-            {mission ? 'Modifier la mission' : 'Créer une nouvelle mission'}
+          <DialogTitle className="text-2xl font-bold text-[#061E29]">
+            {mission ? "Modifier la mission" : "Créer une nouvelle mission"}
           </DialogTitle>
-          <DialogDescription className="text-[#5F9598]">
-            Remplissez les informations de la mission
-          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="titre" className="text-[#061E29]">Titre *</Label>
-            <Input
-              id="titre"
-              value={formData.titre}
-              onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
-              placeholder="Ex: Psychologue pour centre d'accueil"
-              className="border-[#5F9598] focus:border-[#1D546D]"
-            />
-          </div>
 
+        <div className="space-y-6 py-4">
+          {/* Spécialité principale */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-[#061E29]">Description *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Décrivez la mission en détail..."
-              rows={4}
-              className="border-[#5F9598] focus:border-[#1D546D]"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="typePublic" className="text-[#061E29]">Type de public *</Label>
+            <Label className="text-sm font-semibold text-[#061E29]">
+              Spécialité principale <span className="text-red-500">*</span>
+            </Label>
+            {loadingCategories ? (
+              <div className="flex items-center gap-2 py-3">
+                <Loader2 className="h-4 w-4 animate-spin text-[#1D546D]" />
+                <span className="text-sm text-[#5F9598]">Chargement...</span>
+              </div>
+            ) : (
               <Select
-                value={formData.typePublic}
-                onValueChange={(value) => setFormData({ ...formData, typePublic: value })}
+                value={specialitePrincipale.idCategorie?.toString() || ""}
+                onValueChange={handleSpecialitePrincipaleChange}
               >
-                <SelectTrigger className="border-[#5F9598]">
-                  <SelectValue placeholder="Sélectionnez" />
+                <SelectTrigger className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]">
+                  <SelectValue placeholder="Sélectionnez la spécialité principale" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Enfants">Enfants</SelectItem>
-                  <SelectItem value="Adolescents">Adolescents</SelectItem>
-                  <SelectItem value="Adultes">Adultes</SelectItem>
-                  <SelectItem value="Personnes âgées">Personnes âgées</SelectItem>
-                  <SelectItem value="Familles">Familles</SelectItem>
-                  <SelectItem value="Mixte">Mixte</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </div>
+            )}
+          </div>
 
+          {/* Années d'expérience */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-[#061E29]">
+              Années d&apos;expérience requises
+            </Label>
+            <Input
+              type="number"
+              value={anneesExperience}
+              onChange={(e) =>
+                setAnneesExperience(parseInt(e.target.value) || 0)
+              }
+              placeholder="0"
+              min="0"
+              className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]"
+            />
+          </div>
+
+          {/* Titre */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-[#061E29]">
+              Titre du poste <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              value={formData.titre}
+              onChange={(e) =>
+                setFormData({ ...formData, titre: e.target.value })
+              }
+              placeholder="Ex: Psychologue clinicien"
+              className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-[#061E29]">
+              Description <span className="text-red-500">*</span>
+            </Label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Décrivez les responsabilités et compétences requises..."
+              rows={5}
+              className="w-full border border-[#5F9598] focus:border-[#1D546D] resize-none"
+            />
+          </div>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="urgence" className="text-[#061E29]">Niveau d&apos;urgence *</Label>
+              <Label className="text-sm font-semibold text-[#061E29]">
+                Date de début <span className="text-red-500">*</span>
+              </Label>
+              <DatePicker
+                date={dateDebut}
+                onSelect={(date) => {
+                  setDateDebut(date);
+                  setFormData({
+                    ...formData,
+                    dateDebut: date ? date.toISOString().split("T")[0] : "",
+                  });
+                }}
+                placeholder="Date début"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-[#061E29]">
+                Date de fin <span className="text-red-500">*</span>
+              </Label>
+              <DatePicker
+                date={dateFin}
+                onSelect={(date) => {
+                  setDateFin(date);
+                  setFormData({
+                    ...formData,
+                    dateFin: date ? date.toISOString().split("T")[0] : "",
+                  });
+                }}
+                placeholder="Date fin"
+                disabled={!dateDebut}
+              />
+            </div>
+          </div>
+
+          {/* Urgence et Statut */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-[#061E29]">
+                Urgence <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={formData.urgence}
-                onValueChange={(value) => setFormData({ ...formData, urgence: value as Mission['urgence'] })}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    urgence: value as Mission["urgence"],
+                  })
+                }
               >
-                <SelectTrigger className="border-[#5F9598]">
-                  <SelectValue placeholder="Sélectionnez" />
+                <SelectTrigger className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Normale">Normale</SelectItem>
@@ -348,56 +522,57 @@ const MissionFormDialog: React.FC<{ mission?: Mission; onSave: (mission: Partial
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dateDebut" className="text-[#061E29]">Date de début *</Label>
-              <Input
-                id="dateDebut"
-                type="date"
-                value={formData.dateDebut}
-                onChange={(e) => setFormData({ ...formData, dateDebut: e.target.value })}
-                className="border-[#5F9598] focus:border-[#1D546D]"
-              />
+              <Label className="text-sm font-semibold text-[#061E29]">
+                Statut <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.statut}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    statut: value as Mission["statut"],
+                  })
+                }
+              >
+                <SelectTrigger className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Brouillon">Brouillon</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Terminée">Terminée</SelectItem>
+                  <SelectItem value="Annulée">Annulée</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dateFin" className="text-[#061E29]">Date de fin *</Label>
-              <Input
-                id="dateFin"
-                type="date"
-                value={formData.dateFin}
-                onChange={(e) => setFormData({ ...formData, dateFin: e.target.value })}
-                className="border-[#5F9598] focus:border-[#1D546D]"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="statut" className="text-[#061E29]">Statut *</Label>
-            <Select
-              value={formData.statut}
-              onValueChange={(value) => setFormData({ ...formData, statut: value as Mission['statut'] })}
-            >
-              <SelectTrigger className="border-[#5F9598]">
-                <SelectValue placeholder="Sélectionnez" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Brouillon">Brouillon</SelectItem>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Terminée">Terminée</SelectItem>
-                <SelectItem value="Annulée">Annulée</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
+
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             Annuler
           </Button>
-          <Button onClick={handleSubmit} className="bg-[#1D546D] hover:bg-[#061E29] text-white">
-            {mission ? 'Mettre à jour' : 'Créer'}
+          <Button
+            onClick={handleSubmit}
+            className="bg-[#1D546D] hover:bg-[#061E29] text-white"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {mission ? "Mise à jour..." : "Création..."}
+              </>
+            ) : mission ? (
+              "Mettre à jour"
+            ) : (
+              "Créer"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -406,40 +581,103 @@ const MissionFormDialog: React.FC<{ mission?: Mission; onSave: (mission: Partial
 };
 
 const Missions: React.FC = () => {
-  const [missions, setMissions] = useState<Mission[]>(mockMissions);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatut, setFilterStatut] = useState<string>('all');
-  const [filterUrgence, setFilterUrgence] = useState<string>('all');
-  const [filterTypePublic, setFilterTypePublic] = useState<string>('all');
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatut, setFilterStatut] = useState<string>("all");
+  const [filterUrgence, setFilterUrgence] = useState<string>("all");
+  const [editingMission, setEditingMission] = useState<Mission | undefined>();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const filteredMissions = missions.filter(mission => {
-    const matchSearch = mission.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       mission.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatut = filterStatut === 'all' || mission.statut === filterStatut;
-    const matchUrgence = filterUrgence === 'all' || mission.urgence === filterUrgence;
-    const matchTypePublic = filterTypePublic === 'all' || mission.typePublic === filterTypePublic;
-    
-    return matchSearch && matchStatut && matchUrgence && matchTypePublic;
-  });
+  // Charger les missions
+  const loadMissions = async () => {
+    setLoading(true);
+    try {
+      const result = await getMissions({
+        statut: filterStatut,
+        urgence: filterUrgence,
+        search: searchTerm || undefined,
+      });
 
-  const handleSaveMission = (missionData: Partial<Mission>) => {
-    console.log('Mission saved:', missionData);
+      if (result.success && result.data) {
+        setMissions(result.data);
+      } else {
+        toast.error(result.error || "Erreur lors du chargement des missions");
+      }
+    } catch (error) {
+      toast.error("Erreur lors du chargement des missions");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteMission = (id: string) => {
-    setMissions(missions.filter(m => m.id !== id));
+  useEffect(() => {
+    loadMissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatut, filterUrgence]);
+
+  // Recherche avec debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadMissions();
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  const filteredMissions = missions.filter((mission) => {
+    const matchSearch =
+      mission.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mission.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatut =
+      filterStatut === "all" || mission.statut === filterStatut;
+    const matchUrgence =
+      filterUrgence === "all" || mission.urgence === filterUrgence;
+
+    return matchSearch && matchStatut && matchUrgence;
+  });
+
+  const handleSaveMission = async () => {
+    await loadMissions();
+    setEditingMission(undefined);
+  };
+
+  const handleDeleteMission = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette mission ?")) {
+      return;
+    }
+
+    try {
+      const result = await deleteMission(id);
+      if (result.success) {
+        toast.success("Mission supprimée avec succès");
+        await loadMissions();
+      } else {
+        toast.error(result.error || "Erreur lors de la suppression");
+      }
+    } catch (error) {
+      toast.error("Erreur lors de la suppression");
+      console.error(error);
+    }
   };
 
   const handleViewCandidatures = (missionId: string) => {
-    console.log('View candidatures for mission:', missionId);
+    // TODO: Implémenter la navigation vers la page des candidatures
+    console.log("View candidatures for mission:", missionId);
+    toast.info("Fonctionnalité à venir");
   };
 
   return (
     <SidebarProvider
-      style={{
-        "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
-      } as React.CSSProperties}
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
@@ -452,7 +690,29 @@ const Missions: React.FC = () => {
                 Gérez vos missions et consultez les candidatures
               </p>
             </div>
-            <MissionFormDialog onSave={handleSaveMission} />
+            <MissionFormDialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+              onSave={handleSaveMission}
+            />
+            {editingMission && (
+              <MissionFormDialog
+                mission={editingMission}
+                open={isEditDialogOpen}
+                onOpenChange={(open) => {
+                  setIsEditDialogOpen(open);
+                  if (!open) setEditingMission(undefined);
+                }}
+                onSave={handleSaveMission}
+              />
+            )}
+            <Button
+              className="bg-[#061E29] text-white"
+              onClick={() => setIsCreateDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Créer nouvelle mission
+            </Button>
           </div>
 
           {/* Barre de recherche et filtres */}
@@ -484,7 +744,10 @@ const Missions: React.FC = () => {
                     </SelectContent>
                   </Select>
 
-                  <Select value={filterUrgence} onValueChange={setFilterUrgence}>
+                  <Select
+                    value={filterUrgence}
+                    onValueChange={setFilterUrgence}
+                  >
                     <SelectTrigger className="w-45 border-[#5F9598]">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Urgence" />
@@ -496,46 +759,49 @@ const Missions: React.FC = () => {
                       <SelectItem value="Urgente">Urgente</SelectItem>
                     </SelectContent>
                   </Select>
-
-                  <Select value={filterTypePublic} onValueChange={setFilterTypePublic}>
-                    <SelectTrigger className="w-45 border-[#5F9598]">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Type de public" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les publics</SelectItem>
-                      <SelectItem value="Enfants">Enfants</SelectItem>
-                      <SelectItem value="Adolescents">Adolescents</SelectItem>
-                      <SelectItem value="Adultes">Adultes</SelectItem>
-                      <SelectItem value="Personnes âgées">Personnes âgées</SelectItem>
-                      <SelectItem value="Familles">Familles</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Liste des missions */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
-            {filteredMissions.length > 0 ? (
-              filteredMissions.map((mission) => (
-                <MissionCard
-                  key={mission.id}
-                  mission={mission}
-                  onEdit={() => handleSaveMission(mission)}
-                  onDelete={() => handleDeleteMission(mission.id)}
-                  onViewCandidatures={() => handleViewCandidatures(mission.id)}
-                />
-              ))
-            ) : (
-              <Card className="border-none shadow-lg bg-white">
-                <CardContent className="py-12 text-center">
-                  <p className="text-[#5F9598] text-lg">Aucune mission trouvée</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          {loading ? (
+            <Card className="border-none shadow-lg bg-white">
+              <CardContent className="py-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#1D546D] mb-4" />
+                <p className="text-[#5F9598] text-lg">
+                  Chargement des missions...
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+              {filteredMissions.length > 0 ? (
+                filteredMissions.map((mission) => (
+                  <MissionCard
+                    key={mission.id}
+                    mission={mission}
+                    onEdit={() => {
+                      setEditingMission(mission);
+                      setIsEditDialogOpen(true);
+                    }}
+                    onDelete={() => handleDeleteMission(mission.id)}
+                    onViewCandidatures={() =>
+                      handleViewCandidatures(mission.id)
+                    }
+                  />
+                ))
+              ) : (
+                <Card className="border-none shadow-lg bg-white">
+                  <CardContent className="py-12 text-center">
+                    <p className="text-[#5F9598] text-lg">
+                      Aucune mission trouvée
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </div>
       </SidebarInset>
     </SidebarProvider>

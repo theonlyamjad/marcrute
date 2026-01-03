@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AlertTriangle, 
   ShieldAlert, 
@@ -11,11 +11,14 @@ import {
   MessageSquare,
   User,
   Info,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react';
 
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from '@/components/enterprise-dashboard/components/app-sidebar';
+import { getIssuedSignalements, getReceivedSignalements, createSignalement, getWorkersForSignalement } from '@/actions/enterprise/reports';
+import { toast } from 'sonner';
 
 // --- Interfaces ---
 export type ReportStatus = "en attente" | "traité" | "rejeté";
@@ -32,42 +35,6 @@ export interface Report {
   emitterName?: string; // Pour les rapports reçus
 }
 
-// --- Mock Data ---
-const ISSUED_REPORTS: Report[] = [
-  {
-    id: "REP-001",
-    workerName: "Karim Idrissi",
-    motive: "Absence injustifiée",
-    description: "Le travailleur ne s'est pas présenté au poste le 12/01 sans prévenir.",
-    status: "traité",
-    dateCreated: "12/01/2026",
-    dateProcessed: "14/01/2026",
-    adminResponse: "Le travailleur a reçu un avertissement formel. Ses disponibilités ont été suspendues."
-  },
-  {
-    id: "REP-002",
-    workerName: "Siham Touzani",
-    motive: "Comportement inapproprié",
-    description: "Non-respect des consignes de sécurité sur le chantier.",
-    status: "en attente",
-    dateCreated: "15/01/2026"
-  }
-];
-
-const RECEIVED_REPORTS: Report[] = [
-  {
-    id: "REP-RX-01",
-    workerName: "Vous (Entreprise)",
-    emitterName: "Youssef Amrani (Travailleur)",
-    motive: "Retard de paiement",
-    description: "La mission du 05/01 n'a toujours pas été réglée.",
-    status: "traité",
-    dateCreated: "10/01/2026",
-    dateProcessed: "11/01/2026",
-    adminResponse: "Paiement confirmé par l'entreprise, dossier clos."
-  }
-];
-
 const MOTIVES = [
   "Absence injustifiée",
   "Retard répété",
@@ -79,6 +46,105 @@ const MOTIVES = [
 
 const ReportsPage = () => {
   const [activeTab, setActiveTab] = useState<'issued' | 'received' | 'create'>('issued');
+  const [issuedReports, setIssuedReports] = useState<Report[]>([]);
+  const [receivedReports, setReceivedReports] = useState<Report[]>([]);
+  const [workers, setWorkers] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    idTravailleurConcerne: "",
+    motif: "",
+    description: "",
+  });
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [issuedResult, receivedResult, workersResult] = await Promise.all([
+          getIssuedSignalements(),
+          getReceivedSignalements(),
+          getWorkersForSignalement(),
+        ]);
+
+        if (issuedResult.success && issuedResult.data) {
+          setIssuedReports(issuedResult.data.map(r => ({
+            id: r.id,
+            workerName: r.workerName,
+            motive: r.motive,
+            description: r.description,
+            status: r.status,
+            dateCreated: r.dateCreated,
+            dateProcessed: r.dateProcessed,
+            adminResponse: r.adminResponse,
+          })));
+        }
+
+        if (receivedResult.success && receivedResult.data) {
+          setReceivedReports(receivedResult.data.map(r => ({
+            id: r.id,
+            workerName: r.workerName,
+            emitterName: r.emitterName,
+            motive: r.motive,
+            description: r.description,
+            status: r.status,
+            dateCreated: r.dateCreated,
+            dateProcessed: r.dateProcessed,
+            adminResponse: r.adminResponse,
+          })));
+        }
+
+        if (workersResult.success && workersResult.data) {
+          setWorkers(workersResult.data);
+        }
+      } catch (error) {
+        toast.error("Erreur lors du chargement des signalements");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const handleSubmitReport = async () => {
+    if (!formData.motif || !formData.description) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
+      return;
+    }
+
+    const result = await createSignalement({
+      idTravailleurConcerne: formData.idTravailleurConcerne || null,
+      motif: formData.motif,
+      description: formData.description,
+    });
+
+    if (result.success) {
+      toast.success("Signalement créé avec succès");
+      setFormData({
+        idTravailleurConcerne: "",
+        motif: "",
+        description: "",
+      });
+      // Recharger les données
+      const issuedResult = await getIssuedSignalements();
+      if (issuedResult.success && issuedResult.data) {
+        setIssuedReports(issuedResult.data.map(r => ({
+          id: r.id,
+          workerName: r.workerName,
+          motive: r.motive,
+          description: r.description,
+          status: r.status,
+          dateCreated: r.dateCreated,
+          dateProcessed: r.dateProcessed,
+          adminResponse: r.adminResponse,
+        })));
+      }
+      setActiveTab('issued');
+    } else {
+      toast.error(result.error || "Erreur lors de la création du signalement");
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -115,9 +181,18 @@ const ReportsPage = () => {
           </div>
 
           <div className="animate-in fade-in duration-500">
-            {activeTab === 'issued' && <ReportsList reports={ISSUED_REPORTS} type="issued" />}
-            {activeTab === 'received' && <ReportsList reports={RECEIVED_REPORTS} type="received" />}
-            {activeTab === 'create' && <CreateReportForm />}
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-[#1D546D] mb-4" />
+                <p className="text-[#5F9598] text-lg ml-4">Chargement des signalements...</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'issued' && <ReportsList reports={issuedReports} type="issued" />}
+                {activeTab === 'received' && <ReportsList reports={receivedReports} type="received" />}
+                {activeTab === 'create' && <CreateReportForm workers={workers} formData={formData} setFormData={setFormData} onSubmit={handleSubmitReport} />}
+              </>
+            )}
           </div>
         </main>
       </SidebarInset>
@@ -183,22 +258,42 @@ const ReportsList = ({ reports, type }: { reports: Report[], type: 'issued' | 'r
   </div>
 );
 
-const CreateReportForm = () => (
+const CreateReportForm = ({ 
+  workers, 
+  formData, 
+  setFormData, 
+  onSubmit 
+}: { 
+  workers: { id: string; name: string }[];
+  formData: { idTravailleurConcerne: string; motif: string; description: string };
+  setFormData: (data: any) => void;
+  onSubmit: () => void;
+}) => (
   <div className="max-w-2xl bg-white border rounded-2xl p-8 shadow-sm">
     <h2 className="text-xl font-bold text-[#061E29] mb-6">Déposer un nouveau signalement</h2>
     <div className="space-y-6">
       <div>
         <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Travailleur concerné</label>
-        <select className="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none">
-          <option>Sélectionner un travailleur</option>
-          <option>Karim Idrissi</option>
-          <option>Sarah Bensaid</option>
+        <select 
+          className="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none"
+          value={formData.idTravailleurConcerne}
+          onChange={(e) => setFormData({ ...formData, idTravailleurConcerne: e.target.value })}
+        >
+          <option value="">Sélectionner un travailleur (optionnel)</option>
+          {workers.map(w => (
+            <option key={w.id} value={w.id}>{w.name}</option>
+          ))}
         </select>
       </div>
 
       <div>
         <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Motif du signalement</label>
-        <select className="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none">
+        <select 
+          className="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none"
+          value={formData.motif}
+          onChange={(e) => setFormData({ ...formData, motif: e.target.value })}
+        >
+          <option value="">Sélectionner un motif</option>
           {MOTIVES.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
@@ -208,13 +303,18 @@ const CreateReportForm = () => (
         <textarea 
           placeholder="Décrivez précisément les faits..."
           className="w-full border rounded-xl p-4 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none h-40 bg-[#F3F4F4]/20"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
         ></textarea>
         <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
           <Info size={12}/> Votre signalement sera examiné par nos administrateurs sous 24h.
         </p>
       </div>
 
-      <button className="w-full bg-[#061E29] text-white font-bold py-4 rounded-xl hover:bg-[#1D546D] transition-all flex items-center justify-center gap-2">
+      <button 
+        onClick={onSubmit}
+        className="w-full bg-[#061E29] text-white font-bold py-4 rounded-xl hover:bg-[#1D546D] transition-all flex items-center justify-center gap-2"
+      >
         <Send size={18} /> Envoyer le signalement
       </button>
     </div>

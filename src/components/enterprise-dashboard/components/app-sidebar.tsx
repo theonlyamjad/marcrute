@@ -11,15 +11,7 @@ import {
   IconReport,
 } from "@tabler/icons-react";
 
-import {
-  Home,
-  Briefcase,
-  Inbox,
-  Users,
-  Star,
-  Flag,
-  Cog 
-} from 'lucide-react'
+import { Home, Briefcase, Inbox, Users, Star, Flag, Cog } from "lucide-react";
 
 import {
   Sidebar,
@@ -28,7 +20,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -38,43 +30,43 @@ const data = {
   user: {
     name: "shadcn",
     email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg"
+    avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
     {
       title: "Dashboard",
       url: "/enterprise/dashboard",
-      icon: Home
+      icon: Home,
     },
     {
       title: "Missions",
       url: "/enterprise/missions",
-      icon: Briefcase
+      icon: Briefcase,
     },
     {
       title: "Candidature",
       url: "/enterprise/candidature",
-      icon: Inbox
+      icon: Inbox,
     },
     {
       title: "Travailleurs",
       url: "/enterprise/travailleurs",
-      icon: Users 
+      icon: Users,
     },
     {
       title: "Evaluations",
       url: "/enterprise/evaluations",
-      icon: Star 
+      icon: Star,
     },
     {
       title: "Reports",
       url: "/enterprise/reports",
-      icon: Flag
+      icon: Flag,
     },
     {
       title: "Paramètre",
       url: "/enterprise/settings",
-      icon: Cog
+      icon: Cog,
     },
   ],
   navClouds: [
@@ -86,13 +78,13 @@ const data = {
       items: [
         {
           title: "Active Proposals",
-          url: "#"
+          url: "#",
         },
         {
           title: "Archived",
-          url: "#"
-        }
-      ]
+          url: "#",
+        },
+      ],
     },
     {
       title: "Proposal",
@@ -101,13 +93,13 @@ const data = {
       items: [
         {
           title: "Active Proposals",
-          url: "#"
+          url: "#",
         },
         {
           title: "Archived",
-          url: "#"
-        }
-      ]
+          url: "#",
+        },
+      ],
     },
     {
       title: "Prompts",
@@ -116,32 +108,32 @@ const data = {
       items: [
         {
           title: "Active Proposals",
-          url: "#"
+          url: "#",
         },
         {
           title: "Archived",
-          url: "#"
-        }
-      ]
-    }
+          url: "#",
+        },
+      ],
+    },
   ],
   documents: [
     {
       name: "Data Library",
       url: "#",
-      icon: IconDatabase
+      icon: IconDatabase,
     },
     {
       name: "Reports",
       url: "#",
-      icon: IconReport
+      icon: IconReport,
     },
     {
       name: "Word Assistant",
       url: "#",
-      icon: IconFileWord
-    }
-  ]
+      icon: IconFileWord,
+    },
+  ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -155,7 +147,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="#">
-                <span className="text-xl font-bold text-[#5F9598]">MARcrute</span>
+                <span className="text-xl font-bold text-[#5F9598]">
+                  MARcrute
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

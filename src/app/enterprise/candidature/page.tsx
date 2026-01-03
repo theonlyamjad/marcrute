@@ -1,5 +1,5 @@
 "use client"
-import React, { JSX, useState } from 'react';
+import React, { JSX, useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/enterprise-dashboard/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,9 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Check, X, Eye, Star, Briefcase, GraduationCap, Calendar, Filter, MessageSquare } from 'lucide-react';
+import { Check, X, Eye, Star, Briefcase, GraduationCap, Calendar, Filter, MessageSquare, Loader2 } from 'lucide-react';
+import { getCandidatures, getMissionsForFilter, acceptCandidature, rejectCandidature } from '@/actions/enterprise/candidatures';
+import { toast } from 'sonner';
 
 // Types TypeScript
 interface Diplome {
@@ -70,138 +72,6 @@ interface Candidature {
   messageReponse?: string;
 }
 
-// Données mockées
-const mockCandidatures: Candidature[] = [
-  {
-    id: '1',
-    travailleur: {
-      id: 't1',
-      nomComplet: 'Dr. Ahmed Benali',
-      photo: 'https://i.pravatar.cc/150?img=12',
-      noteMoyenne: 4.8,
-      specialites: ['Psychologie clinique', 'Thérapie cognitive', 'Psychologie de l\'enfant'],
-      anneesExperience: 8,
-      diplomes: [
-        { nomDiplome: 'Doctorat en Psychologie', nomInstitution: 'Université Mohammed V', annee: '2015' },
-        { nomDiplome: 'Master en Psychologie Clinique', nomInstitution: 'Université Hassan II', annee: '2012' }
-      ],
-      experiences: [
-        { titrePoste: 'Psychologue Clinicien', organisation: 'Centre Hospitalier Universitaire', duree: '5 ans' },
-        { titrePoste: 'Psychologue pour enfants', organisation: 'Cabinet privé', duree: '3 ans' }
-      ]
-    },
-    mission: {
-      id: 'm1',
-      titre: 'Psychologue pour centre d\'accueil'
-    },
-    dateCandidature: '2025-01-02',
-    messageTravailleur: 'Je suis très intéressé par cette mission. Mon expérience de 8 ans en psychologie clinique, notamment avec les enfants en difficulté, me permet d\'apporter un accompagnement adapté et bienveillant.',
-    statut: 'En attente'
-  },
-  {
-    id: '2',
-    travailleur: {
-      id: 't2',
-      nomComplet: 'Fatima Zahra El Amrani',
-      photo: 'https://i.pravatar.cc/150?img=45',
-      noteMoyenne: 4.6,
-      specialites: ['Éducation spécialisée', 'Autisme', 'Troubles du comportement'],
-      anneesExperience: 6,
-      diplomes: [
-        { nomDiplome: 'Master en Éducation Spécialisée', nomInstitution: 'ISEPS Rabat', annee: '2018' }
-      ],
-      experiences: [
-        { titrePoste: 'Éducatrice spécialisée', organisation: 'Centre pour enfants autistes', duree: '4 ans' },
-        { titrePoste: 'Éducatrice', organisation: 'Foyer de l\'enfance', duree: '2 ans' }
-      ]
-    },
-    mission: {
-      id: 'm2',
-      titre: 'Éducateur spécialisé - Urgence'
-    },
-    dateCandidature: '2025-01-01',
-    messageTravailleur: 'Forte de 6 ans d\'expérience auprès d\'adolescents en difficulté, je suis disponible immédiatement pour cette mission urgente.',
-    statut: 'Acceptée',
-    dateReponse: '2025-01-03',
-    messageReponse: 'Votre profil correspond parfaitement à nos besoins. Nous serions ravis de vous accueillir dans notre équipe.'
-  },
-  {
-    id: '3',
-    travailleur: {
-      id: 't3',
-      nomComplet: 'Omar Idrissi',
-      photo: 'https://i.pravatar.cc/150?img=33',
-      noteMoyenne: 4.5,
-      specialites: ['Travail social', 'Intervention familiale', 'Médiation'],
-      anneesExperience: 5,
-      diplomes: [
-        { nomDiplome: 'Licence en Travail Social', nomInstitution: 'INAS Tanger', annee: '2019' }
-      ],
-      experiences: [
-        { titrePoste: 'Assistant social', organisation: 'Services sociaux municipaux', duree: '3 ans' },
-        { titrePoste: 'Médiateur familial', organisation: 'Association Solidarité', duree: '2 ans' }
-      ]
-    },
-    mission: {
-      id: 'm3',
-      titre: 'Assistant social polyvalent'
-    },
-    dateCandidature: '2024-12-30',
-    messageTravailleur: 'Mon expérience en accompagnement des familles et mes compétences en médiation me permettront d\'assurer pleinement cette mission.',
-    statut: 'En attente'
-  },
-  {
-    id: '4',
-    travailleur: {
-      id: 't4',
-      nomComplet: 'Samira Benchekroun',
-      photo: 'https://i.pravatar.cc/150?img=27',
-      noteMoyenne: 3.9,
-      specialites: ['Psychologie scolaire', 'Orientation'],
-      anneesExperience: 3,
-      diplomes: [
-        { nomDiplome: 'Master en Psychologie de l\'Éducation', nomInstitution: 'Université Cadi Ayyad', annee: '2021' }
-      ],
-      experiences: [
-        { titrePoste: 'Psychologue scolaire', organisation: 'Lycée privé', duree: '2 ans' }
-      ]
-    },
-    mission: {
-      id: 'm1',
-      titre: 'Psychologue pour centre d\'accueil'
-    },
-    dateCandidature: '2024-12-28',
-    messageTravailleur: 'Je souhaite élargir mon expérience au-delà du milieu scolaire et contribuer à l\'accompagnement des enfants en centre d\'accueil.',
-    statut: 'Refusée',
-    dateReponse: '2025-01-02',
-    messageReponse: 'Nous recherchons un profil avec plus d\'expérience en psychologie clinique. Nous vous encourageons à postuler à nouveau dans le futur.'
-  },
-  {
-    id: '5',
-    travailleur: {
-      id: 't5',
-      nomComplet: 'Youssef Tazi',
-      photo: 'https://i.pravatar.cc/150?img=51',
-      noteMoyenne: 4.7,
-      specialites: ['Orthophonie', 'Troubles du langage', 'Dyslexie'],
-      anneesExperience: 7,
-      diplomes: [
-        { nomDiplome: 'Diplôme d\'État en Orthophonie', nomInstitution: 'Institut Supérieur de Santé', annee: '2017' }
-      ],
-      experiences: [
-        { titrePoste: 'Orthophoniste', organisation: 'Cabinet libéral', duree: '5 ans' },
-        { titrePoste: 'Orthophoniste', organisation: 'Centre médico-pédagogique', duree: '2 ans' }
-      ]
-    },
-    mission: {
-      id: 'm4',
-      titre: 'Orthophoniste pédiatrique'
-    },
-    dateCandidature: '2024-12-27',
-    messageTravailleur: 'Ma spécialisation en troubles du langage chez l\'enfant et mes 7 ans d\'expérience font de moi le candidat idéal pour cette mission.',
-    statut: 'En attente'
-  }
-];
 
 const getStatusBadge = (statut: Candidature['statut']): JSX.Element => {
   const variants: Record<Candidature['statut'], string> = {
@@ -447,41 +317,154 @@ const CandidatureCard: React.FC<{
 };
 
 const Candidature: React.FC = () => {
-  const [candidatures, setCandidatures] = useState<Candidature[]>(mockCandidatures);
+  const [candidatures, setCandidatures] = useState<Candidature[]>([]);
+  const [missions, setMissions] = useState<{ id: string; titre: string }[]>([]);
   const [filterMission, setFilterMission] = useState<string>('all');
+  const [filterStatut, setFilterStatut] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
 
-  const missions = Array.from(new Set(candidatures.map(c => c.mission.id))).map(id => {
-    const candidature = candidatures.find(c => c.mission.id === id);
-    return { id, titre: candidature?.mission.titre || '' };
-  });
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [candidaturesResult, missionsResult] = await Promise.all([
+          getCandidatures({ idMission: filterMission !== 'all' ? filterMission : undefined, statut: filterStatut !== 'all' ? filterStatut : undefined }),
+          getMissionsForFilter(),
+        ]);
 
-  const filteredCandidatures = candidatures.filter(c => 
-    filterMission === 'all' || c.mission.id === filterMission
-  );
+        if (candidaturesResult.success && candidaturesResult.data) {
+          // Convertir les données de l'API vers le format attendu par le composant
+          const formatted = candidaturesResult.data.map(c => ({
+            id: c.id,
+            travailleur: {
+              id: c.travailleur.id,
+              nomComplet: c.travailleur.nomComplet,
+              photo: `https://i.pravatar.cc/150?img=${c.travailleur.id.slice(-2)}`,
+              noteMoyenne: c.travailleur.noteMoyenne,
+              specialites: c.travailleur.specialites,
+              anneesExperience: c.travailleur.anneesExperience,
+              diplomes: c.travailleur.diplomes,
+              experiences: c.travailleur.experiences,
+            },
+            mission: c.mission,
+            dateCandidature: c.dateCandidature,
+            messageTravailleur: c.messageTravailleur,
+            statut: c.statut,
+            dateReponse: c.dateReponse,
+            messageReponse: c.messageReponse,
+          }));
+          setCandidatures(formatted);
+        }
+
+        if (missionsResult.success && missionsResult.data) {
+          setMissions(missionsResult.data.map(m => ({ id: m.idMission, titre: m.titre })));
+        }
+      } catch (error) {
+        toast.error("Erreur lors du chargement des candidatures");
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [filterMission, filterStatut]);
+
+  const filteredCandidatures = candidatures;
 
   const enAttente = filteredCandidatures.filter(c => c.statut === 'En attente');
   const acceptees = filteredCandidatures.filter(c => c.statut === 'Acceptée');
   const refusees = filteredCandidatures.filter(c => c.statut === 'Refusée');
 
-  const handleAccept = (candidatureId: string, message: string) => {
-    setCandidatures(candidatures.map(c => 
-      c.id === candidatureId 
-        ? { ...c, statut: 'Acceptée', dateReponse: new Date().toISOString(), messageReponse: message }
-        : c
-    ));
+  const handleAccept = async (candidatureId: string, message: string) => {
+    const result = await acceptCandidature(candidatureId, message);
+    if (result.success) {
+      toast.success("Candidature acceptée avec succès");
+      // Recharger les données
+      const candidaturesResult = await getCandidatures({ idMission: filterMission !== 'all' ? filterMission : undefined, statut: filterStatut !== 'all' ? filterStatut : undefined });
+      if (candidaturesResult.success && candidaturesResult.data) {
+        const formatted = candidaturesResult.data.map(c => ({
+          id: c.id,
+          travailleur: {
+            id: c.travailleur.id,
+            nomComplet: c.travailleur.nomComplet,
+            photo: `https://i.pravatar.cc/150?img=${c.travailleur.id.slice(-2)}`,
+            noteMoyenne: c.travailleur.noteMoyenne,
+            specialites: c.travailleur.specialites,
+            anneesExperience: c.travailleur.anneesExperience,
+            diplomes: c.travailleur.diplomes,
+            experiences: c.travailleur.experiences,
+          },
+          mission: c.mission,
+          dateCandidature: c.dateCandidature,
+          messageTravailleur: c.messageTravailleur,
+          statut: c.statut,
+          dateReponse: c.dateReponse,
+          messageReponse: c.messageReponse,
+        }));
+        setCandidatures(formatted);
+      }
+    } else {
+      toast.error(result.error || "Erreur lors de l'acceptation");
+    }
   };
 
-  const handleReject = (candidatureId: string, message: string) => {
-    setCandidatures(candidatures.map(c => 
-      c.id === candidatureId 
-        ? { ...c, statut: 'Refusée', dateReponse: new Date().toISOString(), messageReponse: message }
-        : c
-    ));
+  const handleReject = async (candidatureId: string, message: string) => {
+    const result = await rejectCandidature(candidatureId, message);
+    if (result.success) {
+      toast.success("Candidature refusée");
+      // Recharger les données
+      const candidaturesResult = await getCandidatures({ idMission: filterMission !== 'all' ? filterMission : undefined, statut: filterStatut !== 'all' ? filterStatut : undefined });
+      if (candidaturesResult.success && candidaturesResult.data) {
+        const formatted = candidaturesResult.data.map(c => ({
+          id: c.id,
+          travailleur: {
+            id: c.travailleur.id,
+            nomComplet: c.travailleur.nomComplet,
+            photo: `https://i.pravatar.cc/150?img=${c.travailleur.id.slice(-2)}`,
+            noteMoyenne: c.travailleur.noteMoyenne,
+            specialites: c.travailleur.specialites,
+            anneesExperience: c.travailleur.anneesExperience,
+            diplomes: c.travailleur.diplomes,
+            experiences: c.travailleur.experiences,
+          },
+          mission: c.mission,
+          dateCandidature: c.dateCandidature,
+          messageTravailleur: c.messageTravailleur,
+          statut: c.statut,
+          dateReponse: c.dateReponse,
+          messageReponse: c.messageReponse,
+        }));
+        setCandidatures(formatted);
+      }
+    } else {
+      toast.error(result.error || "Erreur lors du refus");
+    }
   };
 
   const handleViewProfile = (travailleurId: string) => {
-    console.log('View profile:', travailleurId);
+    // Rediriger vers la page du travailleur ou ouvrir un modal
+    window.location.href = `/enterprise/travailleurs?id=${travailleurId}`;
   };
+
+  if (loading) {
+    return (
+      <SidebarProvider
+        style={{
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties}
+      >
+        <AppSidebar variant="inset" />
+        <SidebarInset>
+          <div className="flex flex-1 flex-col items-center justify-center p-6 md:p-8 bg-[#F3F4F4]">
+            <Loader2 className="h-8 w-8 animate-spin text-[#1D546D] mb-4" />
+            <p className="text-[#5F9598] text-lg">Chargement des candidatures...</p>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    );
+  }
 
   return (
     <SidebarProvider

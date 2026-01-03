@@ -1,13 +1,15 @@
     "use client";
 
-    import React, { useState } from 'react';
+    import React, { useState, useEffect } from 'react';
     import { 
     Search, MapPin, Star, Award, Calendar, Filter, 
-    ChevronRight, Briefcase, GraduationCap, CheckCircle2, X 
+    ChevronRight, Briefcase, GraduationCap, CheckCircle2, X, Loader2
     } from 'lucide-react';
 
     import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
     import { AppSidebar } from '@/components/enterprise-dashboard/components/app-sidebar';
+    import { searchWorkers, getWorkerProfile, getSpecialtyCategories, getRegionsWithCities } from '@/actions/enterprise/travailleurs';
+    import { toast } from 'sonner';
 
     // --- Interfaces de Données ---
     export type WorkerAvailability = "Disponible" | "En mission" | "Bientôt libre";
@@ -39,44 +41,72 @@
     diplomas: Diploma[];
     }
 
-    // --- Mock Data Typée ---
-    const MOCK_WORKERS: Worker[] = [
-    {
-        id: 1,
-        name: "Driss Alami",
-        photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Driss",
-        city: "Casablanca",
-        region: "Nouaceur",
-        specialties: [
-        { name: "Soudure Haute Pression", level: "Expert" },
-        { name: "Tuyauterie", level: "Avancé" }
-        ],
-        experience: 12,
-        rating: 4.9,
-        isLabelled: true,
-        availability: "Disponible",
-        bio: "Spécialiste en structures métalliques offshore avec plus de 10 ans d'expérience sur des chantiers internationaux.",
-        diplomas: [{ title: "Master Ingénierie", school: "EMI", year: "2012", verified: true }]
-    },
-    {
-        id: 2,
-        name: "Sarah Bensaid",
-        photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-        city: "Tanger",
-        region: "Tanger-Tétouan",
-        specialties: [{ name: "Électricité Industrielle", level: "Expert" }],
-        experience: 4,
-        rating: 4.2,
-        isLabelled: false,
-        availability: "En mission",
-        bio: "Technicienne spécialisée dans la maintenance préventive des systèmes automatisés.",
-        diplomas: [{ title: "BTS Électrotechnique", school: "OFPPT", year: "2019", verified: true }]
-    }
-    ];
-
     const TravailleursPage = () => {
-    // Suppression du "any" ici
+    const [workers, setWorkers] = useState<Worker[]>([]);
     const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filters, setFilters] = useState({
+        idSpecialite: undefined as number | undefined,
+        idVille: undefined as string | undefined,
+        anneesExperienceMin: undefined as number | undefined,
+        isLabelled: undefined as boolean | undefined,
+        isAvailable: undefined as boolean | undefined,
+    });
+    const [specialties, setSpecialties] = useState<{ id: number; name: string }[]>([]);
+    const [regions, setRegions] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [workersResult, specialtiesResult, regionsResult] = await Promise.all([
+                    searchWorkers({ search: searchTerm || undefined, ...filters }),
+                    getSpecialtyCategories(),
+                    getRegionsWithCities(),
+                ]);
+
+                if (workersResult.success && workersResult.data) {
+                    setWorkers(workersResult.data.map(w => ({
+                        ...w,
+                        id: parseInt(w.id) || 0,
+                        photo: w.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${w.name}`,
+                    })));
+                }
+
+                if (specialtiesResult.success && specialtiesResult.data) {
+                    setSpecialties(specialtiesResult.data.map(s => ({ id: s.id, name: s.name })));
+                }
+
+                if (regionsResult.success && regionsResult.data) {
+                    setRegions(regionsResult.data);
+                }
+            } catch (error) {
+                toast.error("Erreur lors du chargement des travailleurs");
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, [searchTerm, filters]);
+
+    const handleSelectWorker = async (worker: Worker) => {
+        try {
+            const result = await getWorkerProfile(worker.id.toString());
+            if (result.success && result.data) {
+                setSelectedWorker({
+                    ...result.data,
+                    id: parseInt(result.data.id) || 0,
+                    photo: result.data.photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${result.data.name}`,
+                });
+            }
+        } catch (error) {
+            toast.error("Erreur lors du chargement du profil");
+            console.error(error);
+        }
+    };
 
     return (
         <SidebarProvider>
@@ -95,6 +125,8 @@
                     type="text" 
                     placeholder="Rechercher un talent..." 
                     className="pl-10 pr-4 py-2 border rounded-full text-sm w-64 focus:ring-2 focus:ring-[#5F9598] outline-none"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 </div>
             </div>
@@ -108,42 +140,83 @@
                 </div>
 
                 <FilterSection label="Spécialité">
-                <select className="w-full p-2 border rounded-md text-sm text-[#061E29]">
-                    <option>Toutes</option>
-                    <option>Soudure</option>
-                    <option>Électricité</option>
+                <select 
+                    className="w-full p-2 border rounded-md text-sm text-[#061E29]"
+                    value={filters.idSpecialite?.toString() || ""}
+                    onChange={(e) => setFilters({ ...filters, idSpecialite: e.target.value ? parseInt(e.target.value) : undefined })}
+                >
+                    <option value="">Toutes</option>
+                    {specialties.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
                 </select>
                 </FilterSection>
 
                 <FilterSection label="Expérience (ans)">
-                <input type="range" className="w-full accent-[#5F9598]" />
+                <input 
+                    type="range" 
+                    className="w-full accent-[#5F9598]" 
+                    min="0"
+                    max="20"
+                    value={filters.anneesExperienceMin || 0}
+                    onChange={(e) => setFilters({ ...filters, anneesExperienceMin: parseInt(e.target.value) || undefined })}
+                />
+                <span className="text-xs text-[#5F9598]">{filters.anneesExperienceMin || 0} ans minimum</span>
                 </FilterSection>
 
                 <div className="pt-4 space-y-3">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" className="accent-[#5F9598]" />
+                    <input 
+                        type="checkbox" 
+                        className="accent-[#5F9598]"
+                        checked={filters.isLabelled === true}
+                        onChange={(e) => setFilters({ ...filters, isLabelled: e.target.checked ? true : undefined })}
+                    />
                     <span className="text-[#061E29]">Labellisés uniquement</span>
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" className="accent-[#5F9598]" />
+                    <input 
+                        type="checkbox" 
+                        className="accent-[#5F9598]"
+                        checked={filters.isAvailable === true}
+                        onChange={(e) => setFilters({ ...filters, isAvailable: e.target.checked ? true : undefined })}
+                    />
                     <span className="text-[#061E29]">Disponible immédiatement</span>
                 </label>
                 </div>
                 
-                <button className="w-full py-2 bg-[#5F9598] text-white rounded-lg text-sm font-bold hover:bg-[#1D546D] transition-colors">
-                Appliquer les filtres
+                <button 
+                    onClick={() => {
+                        setFilters({
+                            idSpecialite: undefined,
+                            idVille: undefined,
+                            anneesExperienceMin: undefined,
+                            isLabelled: undefined,
+                            isAvailable: undefined,
+                        });
+                        setSearchTerm("");
+                    }}
+                    className="w-full py-2 bg-[#5F9598] text-white rounded-lg text-sm font-bold hover:bg-[#1D546D] transition-colors"
+                >
+                    Réinitialiser les filtres
                 </button>
             </aside>
 
             {/* --- Liste des Travailleurs --- */}
             <main className="flex-1 p-6 overflow-y-auto">
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                {MOCK_WORKERS.map((worker) => (
-                    <div 
-                    key={worker.id}
-                    onClick={() => setSelectedWorker(worker)}
-                    className="group flex gap-4 p-4 border rounded-xl hover:border-[#5F9598] hover:shadow-md transition-all cursor-pointer bg-white"
-                    >
+                {loading ? (
+                    <div className="flex items-center justify-center py-20">
+                        <Loader2 className="h-8 w-8 animate-spin text-[#1D546D] mb-4" />
+                        <p className="text-[#5F9598] text-lg ml-4">Chargement des travailleurs...</p>
+                    </div>
+                ) : workers.length > 0 ? (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {workers.map((worker) => (
+                        <div 
+                        key={worker.id}
+                        onClick={() => handleSelectWorker(worker)}
+                        className="group flex gap-4 p-4 border rounded-xl hover:border-[#5F9598] hover:shadow-md transition-all cursor-pointer bg-white"
+                        >
                     <img src={worker.photo} className="w-20 h-20 rounded-lg bg-[#F3F4F4]" alt={worker.name} />
                     
                     <div className="flex-1">
@@ -186,8 +259,13 @@
                         </div>
                     </div>
                     </div>
-                ))}
-                </div>
+                    ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-20">
+                        <p className="text-[#5F9598] text-lg">Aucun travailleur trouvé</p>
+                    </div>
+                )}
             </main>
 
             {/* --- Vue Détaillée Typée --- */}
