@@ -1,5 +1,3 @@
-// Mission related types based on Prisma schema
-
 export interface Mission {
   idMission: string;
   idInstitution: string;

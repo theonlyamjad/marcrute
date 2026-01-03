@@ -74,11 +74,11 @@ return (
       {/* FORM */}
       <div className="p-6 sm:p-10 flex flex-col">
         {/* LOGO */}
-        <div className="mb-6 flex justify-center lg:justify-start">
-          <Link href="/" className="text-xl font-black text-slate-800">
-            MARcrute <span className="text-[#5F9598]">Enterprise</span>
-          </Link>
-        </div>
+          <div className="mb-6 flex justify-center lg:justify-start">
+            <Link href="/" className="font-black text-slate-800">
+              <span className="text-3xl">MARcrute</span> <span className="inline-flex items-center justify-center rounded-full bg-slate-800 px-3 py-1 text-xs -rotate-7 font-semibold uppercase tracking-wide text-[#5F9598]">Enterprise</span>
+            </Link>
+          </div>
 
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-lg">
@@ -153,7 +153,7 @@ return (
       </div>
 
       {/* IMAGE */}
-      <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-cyan-50 to-sky-100 p-8">
+      <div className="hidden lg:flex items-center justify-center bg-linear-to-br from-cyan-50 to-sky-100 p-8">
         <Image
           src={img_sign_up_entreprise}
           alt="Inscription entreprise"

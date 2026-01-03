@@ -67,53 +67,63 @@ export const authOptions: NextAuthConfig = {
   ],
   
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // For OAuth sign-in (Google)
-      if (account?.provider === "google") {
-        try {
-          const existingUser = await prisma.utilisateur.findUnique({
-            where: { email: user.email! },
+async signIn({ user, account, profile }) {
+  if (account?.provider === "google") {
+    try {
+      const existingUser = await prisma.utilisateur.findUnique({
+        where: { email: user.email! },
+      });
+
+      if (!existingUser) {
+        // ✅ USE TRANSACTION TO CREATE BOTH USER AND WORKER
+        const result = await prisma.$transaction(async (tx) => {
+          const newUser = await tx.utilisateur.create({
+            data: {
+              email: user.email!,
+              nomComplet: user.name || (profile as { name?: string })?.name || "Google User",
+              emailVerified: new Date(),
+              role: "Travailleur",
+              hashMotDePasse: null,
+            },
           });
 
-          // If user doesn't exist, create them
-          if (!existingUser) {
-            const newUser = await prisma.utilisateur.create({
-              data: {
-                email: user.email!,
-                nomComplet: user.name || (profile as { name?: string })?.name || "Google User",
-                emailVerified: new Date(),
-                role: "Travailleur",
-                hashMotDePasse: null,
-              },
-            });
-            
-            // Update user id for session
-            (user as User).id = newUser.idUtilisateur;
-            (user as User).role = newUser.role;
-            
-            console.log("Created new Google user:", newUser.email);
-          } else {
-            // Update emailVerified if not set
-            if (!existingUser.emailVerified) {
-              await prisma.utilisateur.update({
-                where: { email: user.email! },
-                data: { emailVerified: new Date() },
-              });
-            }
-            
-            (user as User).id = existingUser.idUtilisateur;
-            (user as User).role = existingUser.role;
-          }
-          
-          return true;
-        } catch (error) {
-          console.error("Google sign-in error:", error);
-          return false;
-        }
-      }
+          // ✅ CREATE WORKER PROFILE (THIS WAS MISSING!)
+          await tx.travailleur.create({
+            data: {
+              idUtilisateur: newUser.idUtilisateur,
+              dateCreation: new Date(),
+            },
+          });
 
+          return newUser;
+        });
+        
+        (user as User).id = result.idUtilisateur;
+        (user as User).role = result.role;
+        
+        console.log("Created new Google user with worker profile:", result.email);
+      } else {
+        // Update emailVerified if not set
+        if (!existingUser.emailVerified) {
+          await prisma.utilisateur.update({
+            where: { email: user.email! },
+            data: { emailVerified: new Date() },
+          });
+        }
+        
+        (user as User).id = existingUser.idUtilisateur;
+        (user as User).role = existingUser.role;
+      }
+      
       return true;
-    },
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      return false;
+    }
+  }
+
+  return true;
+},
 
     async session({ session, token }) {
       if (token.sub && session.user) {
@@ -163,7 +173,7 @@ export const authOptions: NextAuthConfig = {
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      return `${baseUrl}/dashboard`;
+      return `${baseUrl}/worker/dashboard`;
     },
   },
   

@@ -75,8 +75,8 @@ const SignInEntreprisePage = () => {
         {/* FORM */}
         <div className="p-6 sm:p-10 flex flex-col">
           <div className="mb-6 flex justify-center lg:justify-start">
-            <Link href="/" className="text-xl font-black text-slate-800">
-              MARcrute <span className="text-[#5F9598]">Enterprise</span>
+            <Link href="/" className="font-black text-slate-800">
+              <span className="text-3xl">MARcrute</span> <span className="inline-flex items-center justify-center rounded-full bg-slate-800 px-3 py-1 text-xs -rotate-7 font-semibold uppercase tracking-wide text-[#5F9598]">Enterprise</span>
             </Link>
           </div>
 
