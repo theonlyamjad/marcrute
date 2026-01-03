@@ -13,7 +13,8 @@ import Image from "next/image"
 
 const SignupPage = () => {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     companyName: "",
     email: "",
@@ -41,29 +42,38 @@ const SignupPage = () => {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    seterrFormData({ companyName: "", email: "", password: "" })
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsLoading(true)
+  setMessage(null)
+  seterrFormData({ companyName: "", email: "", password: "" })
 
-    const result = await signUpEnterpriseAction(
-      formData.companyName,
-      formData.email,
-      formData.password
+  const result = await signUpEnterpriseAction(
+    formData.companyName,
+    formData.email,
+    formData.password
+  )
+
+  if (result?.success) {
+    setMessage(
+      "Inscription réussie ! Vérifiez votre email pour activer votre compte entreprise."
     )
 
-    if (result?.error) {
-      seterrFormData({
-        companyName: "",
-        email: result.error,
-        password: ""
-      })
-      setIsLoading(false)
-    } else {
-      // Redirect based on role
-      router.push(result.redirectTo || "/")
-    }
+    setTimeout(() => {
+      setMessage(null)
+      router.push("/enterprise/sign-in")
+    }, 5000)
+  } else if (result?.error) {
+    seterrFormData({
+      companyName: "",
+      email: result.error,
+      password: ""
+    })
   }
+
+  setIsLoading(false)
+}
+
 
 
 
@@ -83,7 +93,11 @@ return (
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-lg">
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-
+              {message && (
+              <div className="mb-4 rounded-lg bg-green-100 px-4 py-3 text-green-700 text-sm text-center">
+                {message}
+              </div>
+            )}
               <div className="text-center lg:text-left">
                 <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
                   Créer un compte entreprise
