@@ -1,12 +1,14 @@
+import { WorkerNavbar } from "@/components/ui/worker/Workernavbar";
 
-export default function RootLayout({
+export default function WorkerLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-        <div>
-            {children}
-        </div>
+    <div className="min-h-screen">
+      <WorkerNavbar />
+      <main>{children}</main>
+    </div>
   );
 }
