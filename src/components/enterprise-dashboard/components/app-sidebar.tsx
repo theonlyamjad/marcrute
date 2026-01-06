@@ -1,27 +1,9 @@
 "use client";
-
 import * as React from "react";
 import Link from "next/link";
-import {
-  IconCamera,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconReport,
-} from "@tabler/icons-react";
-
+import {IconCamera,IconDatabase,IconFileAi,IconFileDescription,IconFileWord,IconReport,} from "@tabler/icons-react";
 import { Home, Briefcase, Inbox, Users, Star, Flag, Cog } from "lucide-react";
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import {Sidebar,SidebarContent,SidebarFooter,SidebarHeader,SidebarMenu,SidebarMenuButton,SidebarMenuItem,} from "@/components/ui/sidebar";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 import SidebarNav from "./sidebar-nav";

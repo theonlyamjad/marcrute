@@ -1,27 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  AlertTriangle, 
-  ShieldAlert, 
-  PlusCircle, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  MessageSquare,
-  User,
-  Info,
-  Send,
-  Loader2
-} from 'lucide-react';
-
+import { AlertTriangle, ShieldAlert, PlusCircle,Clock,CheckCircle,XCircle,MessageSquare,User,Info,Send,Loader2} from 'lucide-react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from '@/components/enterprise-dashboard/components/app-sidebar';
 import { getIssuedSignalements, getReceivedSignalements, createSignalement, getWorkersForSignalement } from '@/actions/enterprise/reports';
 import { toast } from 'sonner';
 
 // --- Interfaces ---
-export type ReportStatus = "en attente" | "traité" | "rejeté";
+export type ReportStatus = "En attente" | "Traité" | "Rejeté";
 
 export interface Report {
   id: string;
@@ -336,14 +323,14 @@ const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick:
 
 const StatusBadge = ({ status }: { status: ReportStatus }) => {
   const styles = {
-    "en attente": "bg-orange-100 text-orange-600",
-    "traité": "bg-green-100 text-green-600",
-    "rejeté": "bg-red-100 text-red-600"
+    "En attente": "bg-orange-100 text-orange-600",
+    "Traité": "bg-green-100 text-green-600",
+    "Rejeté": "bg-red-100 text-red-600"
   };
   const icons = {
-    "en attente": <Clock size={12} />,
-    "traité": <CheckCircle size={12} />,
-    "rejeté": <XCircle size={12} />
+    "En attente": <Clock size={12} />,
+    "Traité": <CheckCircle size={12} />,
+    "Rejeté": <XCircle size={12} />
   };
 
   return (

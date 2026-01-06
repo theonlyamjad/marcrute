@@ -7,28 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
+import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from '@/components/ui/select';
+import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger,} from '@/components/ui/dialog';
+import {Tabs,TabsContent,TabsList,TabsTrigger,} from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, X, Eye, Star, Briefcase, GraduationCap, Calendar, Filter, MessageSquare, Loader2 } from 'lucide-react';
 import { getCandidatures, getMissionsForFilter, acceptCandidature, rejectCandidature } from '@/actions/enterprise/candidatures';
@@ -137,7 +118,7 @@ const ResponseDialog: React.FC<{
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="message" className="text-[#061E29]">
-              {type === 'accept' ? 'Message de bienvenue' : 'Raison du refus'}
+              {type === 'accept' ? 'Message de bienvenue (optionnel)' : 'Raison du refus (optionnel)'}
             </Label>
             <Textarea
               id="message"
@@ -201,14 +182,16 @@ const CandidatureCard: React.FC<{
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Message du travailleur */}
-          <div className="bg-[#F3F4F4] rounded-lg p-4 border-l-4 border-[#5F9598]">
-            <div className="flex items-center gap-2 mb-2">
-              <MessageSquare className="h-4 w-4 text-[#1D546D]" />
-              <p className="text-xs font-semibold text-[#061E29]">Message de candidature:</p>
+          {/* Message du travailleur - only show if exists */}
+          {candidature.messageTravailleur && (
+            <div className="bg-[#F3F4F4] rounded-lg p-4 border-l-4 border-[#5F9598]">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="h-4 w-4 text-[#1D546D]" />
+                <p className="text-xs font-semibold text-[#061E29]">Message de candidature:</p>
+              </div>
+              <p className="text-sm text-[#1D546D]">{candidature.messageTravailleur}</p>
             </div>
-            <p className="text-sm text-[#1D546D]">{candidature.messageTravailleur}</p>
-          </div>
+          )}
 
           {/* Informations */}
           <div className="grid grid-cols-2 gap-4">

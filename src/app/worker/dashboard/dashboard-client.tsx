@@ -56,9 +56,9 @@ export function DashboardPageClient({
     if (!urgence) return null;
 
     const urgenceStyles = {
-      Haute: "bg-red-100 text-red-800 border-red-200",
-      Moyenne: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      Basse: "bg-green-100 text-green-800 border-green-200",
+      Urgente: "bg-red-100 text-red-800 border-red-200",
+      Haute: "bg-orange-100 text-orange-800 border-orange-300",
+      Normale: "bg-green-100 text-green-800 border-green-200",
     };
 
     const style =
@@ -326,9 +326,9 @@ export function DashboardPageClient({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes les urgences</SelectItem>
-                  <SelectItem value="Haute">Haute</SelectItem>
-                  <SelectItem value="Moyenne">Moyenne</SelectItem>
-                  <SelectItem value="Basse">Basse</SelectItem>
+                    <SelectItem value="Urgente">Urgente</SelectItem>
+                    <SelectItem value="Haute">Haute</SelectItem>
+                    <SelectItem value="Normale">Normale</SelectItem>
                 </SelectContent>
               </Select>
 

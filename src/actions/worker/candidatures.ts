@@ -1,14 +1,8 @@
-// src/actions/worker/candidatures.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
-import {
-  createApplicationSchema,
-  cancelApplicationSchema,
-  type CreateApplicationInput,
-  type CancelApplicationInput,
-} from "@/lib/validations/worker";
+import {createApplicationSchema,cancelApplicationSchema,type CreateApplicationInput,type CancelApplicationInput,} from "@/lib/validations/worker";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -140,7 +134,7 @@ export async function createApplication(input: CreateApplicationInput) {
       throw new Error("Mission introuvable");
     }
 
-    if (mission.statut !== "Ouverte") {
+    if (mission.statut !== "Active") {
       throw new Error("Cette mission n'est plus ouverte aux candidatures");
     }
 
@@ -162,7 +156,6 @@ export async function createApplication(input: CreateApplicationInput) {
         idTravailleur: worker.idTravailleur,
         idMission: validatedData.idMission,
         statut: "En attente",
-        messageTravailleur: validatedData.messageTravailleur,
       },
       include: {
         mission: {

@@ -2,58 +2,20 @@
 import React, { JSX, useState, useEffect } from "react";
 import { AppSidebar } from "@/components/enterprise-dashboard/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import {Card,CardContent,CardDescription,CardHeader,CardTitle,} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Plus,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  Filter,
-  Search,
-  Calendar as CalendarIcon,
-  Loader2,
-} from "lucide-react";
+import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from "@/components/ui/select";
+import {Dialog,DialogContent,DialogFooter,DialogHeader,DialogTitle,} from "@/components/ui/dialog";
+import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
+import {Plus,MoreVertical,Edit,Trash2,Eye,Filter,Search,Calendar as CalendarIcon,Loader2,} from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
-import {
-  getMissions,
-  createMission,
-  updateMission,
-  deleteMission,
-  getSpecialtyCategories,
-} from "@/actions/enterprise/missions";
+import {getMissions,createMission,updateMission,deleteMission,getSpecialtyCategories,} from "@/actions/enterprise/missions";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 // Types TypeScript
 interface SpecialiteRequise {
@@ -81,6 +43,14 @@ interface Mission {
   dateCreation: string;
 }
 
+// Experience ranges for select
+const EXPERIENCE_RANGES = [
+  { value: "0", label: "0-1 an" },
+  { value: "1", label: "1-5 ans" },
+  { value: "5", label: "5-10 ans" },
+  { value: "10", label: "10+ ans" },
+];
+
 const getStatusBadge = (statut: Mission["statut"]): JSX.Element => {
   const variants: Record<Mission["statut"], string> = {
     Brouillon: "bg-gray-100 text-gray-800 border-gray-300",
@@ -104,6 +74,15 @@ const getUrgenceBadge = (urgence: Mission["urgence"]): JSX.Element => {
       {urgence}
     </Badge>
   );
+};
+
+// Helper function to get experience label
+const getExperienceLabel = (years: number): string => {
+  if (years === 0) return "0-1 an";
+  if (years === 1) return "1-5 ans";
+  if (years === 5) return "5-10 ans";
+  if (years === 10) return "10+ ans";
+  return `${years} ans min`;
 };
 
 const MissionCard: React.FC<{
@@ -138,13 +117,6 @@ const MissionCard: React.FC<{
               <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
                 <Edit className="h-4 w-4 mr-2" />
                 Modifier
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={onViewCandidatures}
-                className="cursor-pointer"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Voir candidatures
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDelete}
@@ -189,7 +161,7 @@ const MissionCard: React.FC<{
                   variant="outline"
                   className="text-xs bg-[#F3F4F4] text-[#1D546D] border-[#5F9598]"
                 >
-                  {spec.specialiteRequise} ({spec.anneesExperienceMin} ans min)
+                  {spec.specialiteRequise} ({getExperienceLabel(spec.anneesExperienceMin)})
                 </Badge>
               ))}
             </div>
@@ -241,7 +213,7 @@ const MissionFormDialog: React.FC<{
     idCategorie: number | null;
     nom: string;
   }>({ idCategorie: null, nom: "" });
-  const [anneesExperience, setAnneesExperience] = useState<number>(0);
+  const [anneesExperience, setAnneesExperience] = useState<string>("0");
 
   // Charger les catégories de spécialités
   useEffect(() => {
@@ -276,10 +248,15 @@ const MissionFormDialog: React.FC<{
           idCategorie: premiereSpec.idCategorie || null,
           nom: premiereSpec.specialiteRequise,
         });
-        setAnneesExperience(premiereSpec.anneesExperienceMin || 0);
+        // Convert years to range value
+        const years = premiereSpec.anneesExperienceMin || 0;
+        if (years >= 10) setAnneesExperience("10");
+        else if (years >= 5) setAnneesExperience("5");
+        else if (years >= 1) setAnneesExperience("1");
+        else setAnneesExperience("0");
       } else {
         setSpecialitePrincipale({ idCategorie: null, nom: "" });
-        setAnneesExperience(0);
+        setAnneesExperience("0");
       }
     } else if (open) {
       setFormData({
@@ -294,7 +271,7 @@ const MissionFormDialog: React.FC<{
       setDateDebut(undefined);
       setDateFin(undefined);
       setSpecialitePrincipale({ idCategorie: null, nom: "" });
-      setAnneesExperience(0);
+      setAnneesExperience("0");
     }
   }, [mission, open]);
 
@@ -321,6 +298,11 @@ const MissionFormDialog: React.FC<{
       return;
     }
 
+    if (!dateDebut || !dateFin) {
+      toast.error("Les dates de début et de fin sont requises");
+      return;
+    }
+
     setLoading(true);
     try {
       // Créer la liste des spécialités avec uniquement la spécialité principale
@@ -330,7 +312,7 @@ const MissionFormDialog: React.FC<{
       if (specialitePrincipale.idCategorie && specialitePrincipale.nom) {
         specialitesRequises.push({
           specialiteRequise: specialitePrincipale.nom,
-          anneesExperienceMin: anneesExperience,
+          anneesExperienceMin: parseInt(anneesExperience),
           idCategorie: specialitePrincipale.idCategorie,
           estObligatoire: true,
         });
@@ -340,8 +322,8 @@ const MissionFormDialog: React.FC<{
         titre: formData.titre!,
         description: formData.description || null,
         typePublic: null,
-        dateDebut: dateDebut || null,
-        dateFin: dateFin || null,
+        dateDebut: dateDebut,
+        dateFin: dateFin,
         urgence: formData.urgence || "Normale",
         statut: formData.statut || "Brouillon",
         specialitesRequises: specialitesRequises,
@@ -383,10 +365,11 @@ const MissionFormDialog: React.FC<{
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Spécialité principale */}
+          {/* Spécialité principale - DISABLED IN EDIT MODE */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-[#061E29]">
               Spécialité principale <span className="text-red-500">*</span>
+              {mission && <span className="text-xs text-[#5F9598] ml-2">(Non modifiable)</span>}
             </Label>
             {loadingCategories ? (
               <div className="flex items-center gap-2 py-3">
@@ -397,8 +380,9 @@ const MissionFormDialog: React.FC<{
               <Select
                 value={specialitePrincipale.idCategorie?.toString() || ""}
                 onValueChange={handleSpecialitePrincipaleChange}
+                disabled={!!mission}
               >
-                <SelectTrigger className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]">
+                <SelectTrigger className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D] disabled:opacity-60 disabled:cursor-not-allowed">
                   <SelectValue placeholder="Sélectionnez la spécialité principale" />
                 </SelectTrigger>
                 <SelectContent>
@@ -412,27 +396,33 @@ const MissionFormDialog: React.FC<{
             )}
           </div>
 
-          {/* Années d'expérience */}
+          {/* Années d'expérience - SELECT BOX */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-[#061E29]">
               Années d&apos;expérience requises
             </Label>
-            <Input
-              type="number"
+            <Select
               value={anneesExperience}
-              onChange={(e) =>
-                setAnneesExperience(parseInt(e.target.value) || 0)
-              }
-              placeholder="0"
-              min="0"
-              className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]"
-            />
+              onValueChange={setAnneesExperience}
+            >
+              <SelectTrigger className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]">
+                <SelectValue placeholder="Sélectionner l'expérience" />
+              </SelectTrigger>
+              <SelectContent>
+                {EXPERIENCE_RANGES.map((range) => (
+                  <SelectItem key={range.value} value={range.value}>
+                    {range.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Titre */}
+          {/* Titre - DISABLED IN EDIT MODE */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-[#061E29]">
               Titre du poste <span className="text-red-500">*</span>
+              {mission && <span className="text-xs text-[#5F9598] ml-2">(Non modifiable)</span>}
             </Label>
             <Input
               value={formData.titre}
@@ -440,7 +430,8 @@ const MissionFormDialog: React.FC<{
                 setFormData({ ...formData, titre: e.target.value })
               }
               placeholder="Ex: Psychologue clinicien"
-              className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D]"
+              className="w-full h-11 border border-[#5F9598] focus:border-[#1D546D] disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={!!mission}
             />
           </div>
 
@@ -460,7 +451,7 @@ const MissionFormDialog: React.FC<{
             />
           </div>
 
-          {/* Dates */}
+          {/* Dates - FIXED */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-[#061E29]">
@@ -470,12 +461,8 @@ const MissionFormDialog: React.FC<{
                 date={dateDebut}
                 onSelect={(date) => {
                   setDateDebut(date);
-                  setFormData({
-                    ...formData,
-                    dateDebut: date ? date.toISOString().split("T")[0] : "",
-                  });
                 }}
-                placeholder="Date début"
+                placeholder="La date de début"
               />
             </div>
             <div className="space-y-2">
@@ -486,12 +473,8 @@ const MissionFormDialog: React.FC<{
                 date={dateFin}
                 onSelect={(date) => {
                   setDateFin(date);
-                  setFormData({
-                    ...formData,
-                    dateFin: date ? date.toISOString().split("T")[0] : "",
-                  });
                 }}
-                placeholder="Date fin"
+                placeholder="La date de fin"
                 disabled={!dateDebut}
               />
             </div>
@@ -581,6 +564,7 @@ const MissionFormDialog: React.FC<{
 };
 
 const Missions: React.FC = () => {
+  const router = useRouter();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -646,10 +630,6 @@ const Missions: React.FC = () => {
   };
 
   const handleDeleteMission = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette mission ?")) {
-      return;
-    }
-
     try {
       const result = await deleteMission(id);
       if (result.success) {
@@ -665,9 +645,8 @@ const Missions: React.FC = () => {
   };
 
   const handleViewCandidatures = (missionId: string) => {
-    // TODO: Implémenter la navigation vers la page des candidatures
-    console.log("View candidatures for mission:", missionId);
-    toast.info("Fonctionnalité à venir");
+    // Redirect to candidature page with mission filter
+    router.push(`/enterprise/candidature?mission=${missionId}`);
   };
 
   return (
@@ -707,7 +686,7 @@ const Missions: React.FC = () => {
               />
             )}
             <Button
-              className="bg-[#061E29] text-white"
+              className="bg-[#061E29] text-white hover:bg-[#5F9598]"
               onClick={() => setIsCreateDialogOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -719,6 +698,7 @@ const Missions: React.FC = () => {
           <Card className="border-none shadow-lg bg-white">
             <CardContent className="pt-6">
               <div className="space-y-4">
+                {/* Search bar */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#5F9598]" />
                   <Input
@@ -729,9 +709,10 @@ const Missions: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex gap-3 flex-wrap">
+                {/* Filters in one row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <Select value={filterStatut} onValueChange={setFilterStatut}>
-                    <SelectTrigger className="w-45 border-[#5F9598]">
+                    <SelectTrigger className="border-[#5F9598]">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Statut" />
                     </SelectTrigger>
@@ -748,7 +729,7 @@ const Missions: React.FC = () => {
                     value={filterUrgence}
                     onValueChange={setFilterUrgence}
                   >
-                    <SelectTrigger className="w-45 border-[#5F9598]">
+                    <SelectTrigger className="border-[#5F9598]">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue placeholder="Urgence" />
                     </SelectTrigger>
@@ -759,6 +740,18 @@ const Missions: React.FC = () => {
                       <SelectItem value="Urgente">Urgente</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFilterStatut("all");
+                      setFilterUrgence("all");
+                      setSearchTerm("");
+                    }}
+                    className="border-[#1D546D] text-[#1D546D] hover:bg-[#1D546D] hover:text-white"
+                  >
+                    Réinitialiser les filtres
+                  </Button>
                 </div>
               </div>
             </CardContent>

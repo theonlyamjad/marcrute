@@ -36,7 +36,7 @@ async function getOrCreateInstitution(userId: string) {
 
   return institution;
 }
-
+  
 // ========================================
 // VALIDATION SCHEMAS
 // ========================================

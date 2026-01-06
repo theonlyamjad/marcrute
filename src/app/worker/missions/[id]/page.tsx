@@ -1,58 +1,112 @@
 "use client";
 
-import { useState,} from "react";
-import { useRouter } from "next/navigation";
-import { Mission } from "@/types/mission";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {MapPin,Calendar,Building2,Clock,Users,ArrowLeft,Send,CheckCircle2,} from "lucide-react";
+import {MapPin,Calendar,Building2,Clock,Users,ArrowLeft,Send,CheckCircle2,Loader2,AlertCircle,} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-// TODO: Replace with actual API call
-const MOCK_MISSION: Mission = {
-  idMission: "1",
-  idInstitution: "inst1",
-  titre: "Assistant Social - Maison de Retraite",
-  description:
-    "Nous recherchons un assistant social expérimenté pour rejoindre notre équipe et accompagner nos résidents dans leurs démarches quotidiennes. Vous serez en charge de maintenir le lien avec les familles, d'organiser des activités adaptées et de coordonner les soins avec l'équipe médicale.\n\nResponsabilités:\n- Évaluation des besoins sociaux des résidents\n- Coordination avec les services médicaux et sociaux\n- Accompagnement des familles\n- Organisation d'activités sociales et culturelles\n- Gestion administrative des dossiers",
-  typePublic: "Personnes âgées",
-  dateDebut: new Date("2025-02-01"),
-  dateFin: new Date("2025-08-01"),
-  urgence: "Urgent",
-  statut: "Ouvert",
-  dateCreation: new Date("2024-12-20"),
-  institution: {
-    nomInstitution: "Résidence Les Oliviers",
-    ville: {
-      nomVille: "Agadir",
-      region: {
-        nomRegion: "Souss-Massa",
-      },
-    },
-  },
-  specialitesRequises: [
-    {
-      idSpecialiteRequise: "1",
-      idMission: "1",
-      specialiteRequise: "Assistant social",
-      anneesExperienceMin: 2,
-    },
-    {
-      idSpecialiteRequise: "2",
-      idMission: "1",
-      specialiteRequise: "Gérontologie",
-      anneesExperienceMin: 1,
-    },
-  ],
-};
+import { getMissionDetails, hasAppliedToMission } from "@/actions/worker/missions";
+import { createApplication } from "@/actions/worker/candidatures";
+import { getWorkerProfile } from "@/actions/worker/profile";
+import { toast } from "sonner";
 
 export default function MissionDetailPage() {
   const router = useRouter();
-  const [mission] = useState<Mission>(MOCK_MISSION);
+  const params = useParams();
+  const missionId = params.id as string;
+
+  const [mission, setMission] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
 
+  useEffect(() => {
+    loadMissionData();
+  }, [missionId]);
+
+  const loadMissionData = async () => {
+    setLoading(true);
+    try {
+      // Fetch mission details and application status in parallel
+      const [missionResult, appliedResult] = await Promise.all([
+        getMissionDetails(missionId),
+        hasAppliedToMission(missionId),
+      ]);
+
+      if (missionResult.success && missionResult.data) {
+        setMission(missionResult.data);
+      } else {
+        toast.error(missionResult.error || "Mission introuvable");
+        router.push("/worker/dashboard");
+      }
+
+      if (appliedResult.success && appliedResult.data) {
+        setHasApplied(appliedResult.data.hasApplied);
+      }
+    } catch (error) {
+      console.error("Error loading mission:", error);
+      toast.error("Erreur lors du chargement de la mission");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkProfileComplete = async (): Promise<boolean> => {
+    const profileResult = await getWorkerProfile();
+
+    if (!profileResult.success || !profileResult.data) {
+      return false;
+    }
+
+    const profile = profileResult.data;
+
+    // Check required fields
+    const hasBasicInfo = !!(
+      profile.biographie &&
+      profile.idVille &&
+      profile.utilisateur?.nomComplet &&
+      profile.utilisateur?.telephone
+    );
+
+    const hasSpecialties = profile.specialites && profile.specialites.length > 0;
+    const hasExperience = profile.experiences && profile.experiences.length > 0;
+    const hasDiplomas = profile.diplomes && profile.diplomes.length > 0;
+
+    return hasBasicInfo && hasSpecialties && hasExperience && hasDiplomas;
+  };
+
+  const handleApply = async () => {
+    // Check profile completeness first
+    const isProfileComplete = await checkProfileComplete();
+
+    if (!isProfileComplete) {
+      toast.error("Veuillez compléter votre profil avant de postuler");
+      router.push("/worker/profile?message=complete-profile-to-apply");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await createApplication({
+        idMission: missionId,
+      });
+
+      if (result.success) {
+        toast.success("Candidature envoyée avec succès!");
+        setHasApplied(true);
+      } else {
+        toast.error(result.error || "Erreur lors de l'envoi de la candidature");
+      }
+    } catch (error) {
+      console.error("Error applying:", error);
+      toast.error("Erreur lors de l'envoi de la candidature");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const formatDate = (date: Date | null) => {
     if (!date) return "Non spécifié";
@@ -67,12 +121,14 @@ export default function MissionDetailPage() {
     if (!urgence) return null;
 
     const urgenceConfig = {
-      Urgent: "bg-red-100 text-red-800 border-red-200",
-      Normal: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      Flexible: "bg-green-100 text-green-800 border-green-200",
+      Urgente: "bg-red-100 text-red-800 border-red-200",
+      Haute: "bg-orange-100 text-orange-800 border-orange-300",
+      Normale: "bg-green-100 text-green-800 border-green-200",
     };
 
-    const style = urgenceConfig[urgence as keyof typeof urgenceConfig] || "bg-gray-100 text-gray-800";
+    const style =
+      urgenceConfig[urgence as keyof typeof urgenceConfig] ||
+      "bg-gray-100 text-gray-800";
 
     return (
       <Badge variant="outline" className={style}>
@@ -81,42 +137,15 @@ export default function MissionDetailPage() {
     );
   };
 
-  const handleApply = async () => {
-    setIsSubmitting(true);
-    
-    // TODO: Check if worker profile is complete
-    const isProfileComplete = await checkProfileComplete();
-    
-    if (!isProfileComplete) {
-      // Redirect to profile page with message
-      router.push("/worker/profile?message=complete-profile-to-apply");
-      return;
-    }
-    
-    // TODO: Submit application to API with worker's profile data
-    // The backend will automatically attach:
-    // - Worker's experience
-    // - Worker's diplomas
-    // - Worker's specialties
-    // - Worker's availability
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
-    
-    setIsSubmitting(false);
-    setHasApplied(true);
-  };
-
-  // TODO: Replace with actual API call
-  const checkProfileComplete = async (): Promise<boolean> => {
-    // Check if worker has:
-    // - Bio filled
-    // - At least one experience
-    // - At least one diploma
-    // - At least one specialty
-    // - City selected
-    return true; // Mock - always returns true for now
-  };
-
-  const MissionInfoRow = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
+  const MissionInfoRow = ({
+    icon: Icon,
+    label,
+    value,
+  }: {
+    icon: any;
+    label: string;
+    value: string;
+  }) => (
     <div className="flex items-center gap-3 py-3 border-b border-[#1D546D]/10 last:border-0">
       <Icon className="h-5 w-5 text-[#5F9598] shrink-0" />
       <div className="flex-1">
@@ -125,6 +154,30 @@ export default function MissionDetailPage() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F3F4F4] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-[#1D546D] mx-auto mb-4" />
+          <p className="text-gray-600">Chargement de la mission...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mission) {
+    return (
+      <div className="min-h-screen bg-[#F3F4F4] flex items-center justify-center">
+        <Alert className="max-w-md bg-red-50 border-2 border-red-200">
+          <AlertCircle className="h-5 w-5 text-red-600" />
+          <AlertDescription className="text-red-800">
+            Mission introuvable
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F3F4F4]">
@@ -162,7 +215,7 @@ export default function MissionDetailPage() {
                         {getUrgenceBadge(mission.urgence)}
                       </div>
                       <p className="text-lg text-[#1D546D] font-medium">
-                        {mission.institution.nomInstitution}
+                        {mission.institution?.nomInstitution}
                       </p>
                     </div>
                   </div>
@@ -183,7 +236,7 @@ export default function MissionDetailPage() {
                       icon={MapPin}
                       label="Localisation"
                       value={
-                        mission.institution.ville
+                        mission.institution?.ville
                           ? `${mission.institution.ville.nomVille}, ${mission.institution.ville.region.nomRegion}`
                           : "Non spécifié"
                       }
@@ -191,7 +244,9 @@ export default function MissionDetailPage() {
                     <MissionInfoRow
                       icon={Calendar}
                       label="Période"
-                      value={`${formatDate(mission.dateDebut)} - ${formatDate(mission.dateFin)}`}
+                      value={`${formatDate(mission.dateDebut)} - ${formatDate(
+                        mission.dateFin
+                      )}`}
                     />
                     {mission.typePublic && (
                       <MissionInfoRow
@@ -205,6 +260,13 @@ export default function MissionDetailPage() {
                       label="Publié le"
                       value={formatDate(mission.dateCreation)}
                     />
+                    <MissionInfoRow
+                      icon={Users}
+                      label="Candidatures"
+                      value={`${mission._count?.candidatures || 0} candidature${
+                        mission._count?.candidatures !== 1 ? "s" : ""
+                      }`}
+                    />
                   </CardContent>
                 </Card>
 
@@ -216,21 +278,28 @@ export default function MissionDetailPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {mission.specialitesRequises.map((spec) => (
-                      <div
-                        key={spec.idSpecialiteRequise}
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#1D546D]/10"
-                      >
-                        <span className="font-medium text-[#061E29] text-sm">
-                          {spec.specialiteRequise}
-                        </span>
-                        {spec.anneesExperienceMin && (
-                          <Badge className="bg-[#5F9598] hover:bg-[#1D546D] text-white text-xs px-2 py-1">
-                            {spec.anneesExperienceMin}+ ans
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
+                    {mission.specialitesRequises &&
+                    mission.specialitesRequises.length > 0 ? (
+                      mission.specialitesRequises.map((spec: any) => (
+                        <div
+                          key={spec.idSpecialiteRequise}
+                          className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#1D546D]/10"
+                        >
+                          <span className="font-medium text-[#061E29] text-sm">
+                            {spec.specialiteRequise}
+                          </span>
+                          {spec.anneesExperienceMin !== null && (
+                            <Badge className="bg-[#5F9598] hover:bg-[#1D546D] text-white text-xs px-2 py-1">
+                              {spec.anneesExperienceMin}+ ans
+                            </Badge>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        Aucune compétence spécifique requise
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -253,13 +322,21 @@ export default function MissionDetailPage() {
             </div>
           </div>
 
-          {/* Apply Button Section - INSIDE CONTAINER */}
+          {/* Apply Button Section */}
           <div className="border-t border-gray-200 pt-6">
             {hasApplied ? (
               <Alert className="bg-green-50 border-2 border-green-200">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <AlertDescription className="text-green-800 font-semibold">
-                  Candidature envoyée avec succès ! L'institution recevra votre profil complet.
+                  Vous avez déjà postulé à cette mission. L'institution a reçu
+                  votre profil complet.
+                </AlertDescription>
+              </Alert>
+            ) : mission.statut !== "Active" ? (
+              <Alert className="bg-yellow-50 border-2 border-yellow-200">
+                <AlertCircle className="h-5 w-5 text-yellow-600" />
+                <AlertDescription className="text-yellow-800 font-semibold">
+                  Cette mission n'est plus ouverte aux candidatures.
                 </AlertDescription>
               </Alert>
             ) : (
@@ -271,6 +348,7 @@ export default function MissionDetailPage() {
               >
                 {isSubmitting ? (
                   <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Envoi en cours...
                   </>
                 ) : (

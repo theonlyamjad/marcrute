@@ -7,14 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Briefcase, Clock, Star, TrendingUp, AlertCircle, Calendar, Loader2 } from 'lucide-react';
-import { 
-  getDashboardStats, 
-  getMissionsTrend, 
-  getCandidaturesStatus, 
-  getRecentCandidatures, 
-  getActiveMissions, 
-  getRecentSignalements 
-} from '@/actions/enterprise/dashboard';
+import { getDashboardStats, getMissionsTrend, getCandidaturesStatus, getRecentCandidatures, getActiveMissions, getRecentSignalements } from '@/actions/enterprise/dashboard';
 import { toast } from 'sonner';
 
 // Types TypeScript

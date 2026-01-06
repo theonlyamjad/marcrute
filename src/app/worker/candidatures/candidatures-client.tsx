@@ -71,9 +71,9 @@ export function CandidaturesPageClient({
     if (!urgence) return null;
 
     const urgenceStyles = {
-      Haute: "bg-red-100 text-red-800 border-red-200",
-      Moyenne: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      Basse: "bg-green-100 text-green-800 border-green-200",
+      Urgente: "bg-red-100 text-red-800 border-red-200",
+      Haute: "bg-orange-100 text-orange-800 border-orange-300",
+      Normale: "bg-green-100 text-green-800 border-green-200",
     };
 
     const style =
@@ -288,10 +288,12 @@ export function CandidaturesPageClient({
                           <Building2 className="h-4 w-4" />
                           {candidature.mission.institution.nomInstitution}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {candidature.mission.institution.ville.nomVille}
-                        </div>
+                        {candidature.mission.institution.ville && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {candidature.mission.institution.ville.nomVille}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {getStatutBadge(candidature.statut)}

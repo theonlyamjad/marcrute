@@ -13,15 +13,10 @@ async function getInstitution(userId: string) {
   });
 
   if (!institution) {
-    const user = await prisma.utilisateur.findUnique({
-      where: { idUtilisateur: userId },
-      select: { nomComplet: true },
-    });
-
     institution = await prisma.institution.create({
       data: {
         idUtilisateur: userId,
-        nomInstitution: user?.nomComplet || "Institution",
+        nomInstitution: "Institution",
       },
       select: { idInstitution: true },
     });
@@ -37,22 +32,35 @@ async function getInstitution(userId: string) {
 const updateInstitutionSchema = z.object({
   nomInstitution: z.string().min(1, "Le nom est requis").max(200).optional(),
   adresse: z.string().max(500).optional().nullable(),
-  localisation: z.string().max(200).optional().nullable(),
-  url: z.string().url("URL invalide").optional().nullable(),
+  url: z.string().max(500).optional().nullable(), // Changed from URL validation to allow Google Maps links
   telephoneInstitution: z
     .string()
-    .regex(/^(\+212|0)[5-7]\d{8}$/, "Numéro invalide")
+    .regex(/^(\+212|0)[5-7]\d{8}$/, "Numéro de téléphone invalide (format: +212XXXXXXXXX ou 0XXXXXXXXX)")
     .optional()
     .nullable(),
-  siteWeb: z.string().url("URL invalide").optional().nullable(),
-  idVille: z.string().optional().nullable(),
+  siteWeb: z
+    .string()
+    .refine(
+      (val) => !val || val === "" || /^https?:\/\/.+/.test(val),
+      "L'URL du site web doit commencer par http:// ou https://"
+    )
+    .optional()
+    .nullable(),
+  idVille: z.string().min(1, "Veuillez sélectionner une ville").optional(),
 });
 
 const updateUserSchema = z.object({
-  nomComplet: z.string().min(2, "Le nom doit contenir au moins 2 caractères").max(100).optional(),
+  nomComplet: z
+    .string()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères")
+    .optional(),
   telephone: z
     .string()
-    .regex(/^(\+212|0)[5-7]\d{8}$/, "Numéro invalide")
+    .regex(
+      /^(\+212|0)[5-7]\d{8}$/,
+      "Numéro de téléphone invalide (format: +212XXXXXXXXX ou 0XXXXXXXXX)"
+    )
     .optional()
     .nullable(),
 });
@@ -60,8 +68,14 @@ const updateUserSchema = z.object({
 const updatePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Le mot de passe actuel est requis"),
-    newPassword: z.string().min(8, "Le nouveau mot de passe doit contenir au moins 8 caractères"),
-    confirmPassword: z.string(),
+    newPassword: z
+      .string()
+      .min(8, "Le nouveau mot de passe doit contenir au moins 8 caractères")
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre"
+      ),
+    confirmPassword: z.string().min(1, "Veuillez confirmer le mot de passe"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",
@@ -75,7 +89,8 @@ const updatePasswordSchema = z
 export async function getInstitutionProfile() {
   try {
     const user = await requireRole("Institution");
-    const institution = await prisma.institution.findUnique({
+    
+    let institution = await prisma.institution.findUnique({
       where: { idUtilisateur: user.id },
       include: {
         utilisateur: {
@@ -93,12 +108,12 @@ export async function getInstitutionProfile() {
       },
     });
 
+    // Create institution if it doesn't exist
     if (!institution) {
-      // Créer l'institution si elle n'existe pas
-      const newInstitution = await prisma.institution.create({
+      institution = await prisma.institution.create({
         data: {
           idUtilisateur: user.id,
-          nomInstitution: user.nomComplet || "Institution",
+          nomInstitution: "Institution",
         },
         include: {
           utilisateur: {
@@ -115,36 +130,6 @@ export async function getInstitutionProfile() {
           },
         },
       });
-
-      return {
-        success: true,
-        data: {
-          institution: {
-            nomInstitution: newInstitution.nomInstitution,
-            adresse: newInstitution.adresse || "",
-            localisation: newInstitution.localisation || "",
-            url: newInstitution.url || "",
-            telephoneInstitution: newInstitution.telephoneInstitution || "",
-            siteWeb: newInstitution.siteWeb || "",
-            idVille: newInstitution.idVille || null,
-            ville: newInstitution.ville
-              ? {
-                  idVille: newInstitution.ville.idVille,
-                  nomVille: newInstitution.ville.nomVille,
-                  region: {
-                    idRegion: newInstitution.ville.region.idRegion,
-                    nomRegion: newInstitution.ville.region.nomRegion,
-                  },
-                }
-              : null,
-          },
-          user: {
-            nomComplet: newInstitution.utilisateur.nomComplet || "",
-            email: newInstitution.utilisateur.email,
-            telephone: newInstitution.utilisateur.telephone || "",
-          },
-        },
-      };
     }
 
     return {
@@ -153,7 +138,6 @@ export async function getInstitutionProfile() {
         institution: {
           nomInstitution: institution.nomInstitution,
           adresse: institution.adresse || "",
-          localisation: institution.localisation || "",
           url: institution.url || "",
           telephoneInstitution: institution.telephoneInstitution || "",
           siteWeb: institution.siteWeb || "",
@@ -178,12 +162,17 @@ export async function getInstitutionProfile() {
     };
   } catch (error) {
     console.error("Error fetching institution profile:", error);
+    
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      return {
+        success: false,
+        error: "Vous devez être connecté en tant qu'institution",
+      };
+    }
+    
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la récupération du profil",
+      error: "Erreur lors de la récupération du profil. Veuillez réessayer.",
     };
   }
 }
@@ -199,53 +188,66 @@ export async function updateInstitution(
     const user = await requireRole("Institution");
     const institution = await getInstitution(user.id);
 
-    // Valider les données
+    // Validate data
     const validatedData = updateInstitutionSchema.parse(input);
 
-    // Mettre à jour l'institution
+    // Check if ville exists if provided
+    if (validatedData.idVille) {
+      const villeExists = await prisma.ville.findUnique({
+        where: { idVille: validatedData.idVille },
+      });
+
+      if (!villeExists) {
+        return {
+          success: false,
+          error: "La ville sélectionnée n'existe pas",
+        };
+      }
+    }
+
+    // Update institution
     await prisma.institution.update({
       where: { idInstitution: institution.idInstitution },
       data: {
         ...(validatedData.nomInstitution && {
           nomInstitution: validatedData.nomInstitution,
         }),
-        ...(validatedData.adresse !== undefined && {
-          adresse: validatedData.adresse,
-        }),
-        ...(validatedData.localisation !== undefined && {
-          localisation: validatedData.localisation,
-        }),
-        ...(validatedData.url !== undefined && { url: validatedData.url }),
-        ...(validatedData.telephoneInstitution !== undefined && {
-          telephoneInstitution: validatedData.telephoneInstitution,
-        }),
-        ...(validatedData.siteWeb !== undefined && {
-          siteWeb: validatedData.siteWeb,
-        }),
-        ...(validatedData.idVille !== undefined && {
-          idVille: validatedData.idVille,
-        }),
+        adresse: validatedData.adresse || null,
+        url: validatedData.url || null,
+        telephoneInstitution: validatedData.telephoneInstitution || null,
+        siteWeb: validatedData.siteWeb || null,
+        idVille: validatedData.idVille || null,
       },
     });
 
     revalidatePath("/enterprise/settings");
     revalidatePath("/enterprise/dashboard");
 
-    return { success: true };
+    return { 
+      success: true,
+      message: "Informations de l'institution mises à jour avec succès"
+    };
   } catch (error) {
     console.error("Error updating institution:", error);
+    
     if (error instanceof z.ZodError) {
+      const firstError = error.issues[0];
       return {
         success: false,
-        error: error.issues.map((issue) => issue.message).join(", "),
+        error: firstError.message,
       };
     }
+    
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      return {
+        success: false,
+        error: "Vous devez être connecté en tant qu'institution",
+      };
+    }
+    
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la mise à jour de l'institution",
+      error: "Erreur lors de la mise à jour. Veuillez vérifier vos informations et réessayer.",
     };
   }
 }
@@ -260,39 +262,47 @@ export async function updateUserProfile(
   try {
     const user = await requireRole("Institution");
 
-    // Valider les données
+    // Validate data
     const validatedData = updateUserSchema.parse(input);
 
-    // Mettre à jour l'utilisateur
+    // Update user
     await prisma.utilisateur.update({
       where: { idUtilisateur: user.id },
       data: {
         ...(validatedData.nomComplet && {
           nomComplet: validatedData.nomComplet,
         }),
-        ...(validatedData.telephone !== undefined && {
-          telephone: validatedData.telephone,
-        }),
+        telephone: validatedData.telephone || null,
       },
     });
 
     revalidatePath("/enterprise/settings");
 
-    return { success: true };
+    return { 
+      success: true,
+      message: "Profil utilisateur mis à jour avec succès"
+    };
   } catch (error) {
     console.error("Error updating user profile:", error);
+    
     if (error instanceof z.ZodError) {
+      const firstError = error.issues[0];
       return {
         success: false,
-        error: error.issues.map((issue) => issue.message).join(", "),
+        error: firstError.message,
       };
     }
+    
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      return {
+        success: false,
+        error: "Vous devez être connecté",
+      };
+    }
+    
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la mise à jour du profil",
+      error: "Erreur lors de la mise à jour du profil. Veuillez réessayer.",
     };
   }
 }
@@ -308,32 +318,39 @@ export async function updatePassword(
     const user = await requireRole("Institution");
     const bcrypt = await import("bcryptjs");
 
-    // Valider les données
+    // Validate data
     const validatedData = updatePasswordSchema.parse(input);
 
-    // Vérifier le mot de passe actuel
+    // Get current user with password
     const currentUser = await prisma.utilisateur.findUnique({
       where: { idUtilisateur: user.id },
       select: { hashMotDePasse: true },
     });
 
     if (!currentUser?.hashMotDePasse) {
-      throw new Error("Aucun mot de passe défini");
+      return {
+        success: false,
+        error: "Aucun mot de passe n'est défini pour ce compte",
+      };
     }
 
+    // Verify current password
     const passwordMatch = await bcrypt.compare(
       validatedData.currentPassword,
       currentUser.hashMotDePasse
     );
 
     if (!passwordMatch) {
-      throw new Error("Mot de passe actuel incorrect");
+      return {
+        success: false,
+        error: "Le mot de passe actuel est incorrect",
+      };
     }
 
-    // Hasher le nouveau mot de passe
+    // Hash new password
     const hashedPassword = await bcrypt.hash(validatedData.newPassword, 10);
 
-    // Mettre à jour le mot de passe
+    // Update password
     await prisma.utilisateur.update({
       where: { idUtilisateur: user.id },
       data: { hashMotDePasse: hashedPassword },
@@ -341,21 +358,31 @@ export async function updatePassword(
 
     revalidatePath("/enterprise/settings");
 
-    return { success: true };
+    return { 
+      success: true,
+      message: "Mot de passe mis à jour avec succès"
+    };
   } catch (error) {
     console.error("Error updating password:", error);
+    
     if (error instanceof z.ZodError) {
+      const firstError = error.issues[0];
       return {
         success: false,
-        error: error.issues.map((issue) => issue.message).join(", "),
+        error: firstError.message,
       };
     }
+    
+    if (error instanceof Error && error.message.includes("Unauthorized")) {
+      return {
+        success: false,
+        error: "Vous devez être connecté",
+      };
+    }
+    
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la mise à jour du mot de passe",
+      error: "Erreur lors de la mise à jour du mot de passe. Veuillez réessayer.",
     };
   }
 }
@@ -379,18 +406,22 @@ export async function getRegionsWithCities() {
       },
     });
 
-    return { success: true, data: regions };
+    if (!regions || regions.length === 0) {
+      return {
+        success: false,
+        error: "Aucune région disponible",
+      };
+    }
+
+    return { 
+      success: true, 
+      data: regions 
+    };
   } catch (error) {
     console.error("Error fetching regions:", error);
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la récupération des régions",
+      error: "Erreur lors de la récupération des régions. Veuillez réessayer.",
     };
   }
 }
-
-
-

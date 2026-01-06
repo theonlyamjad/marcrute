@@ -122,11 +122,6 @@ export type DeleteAvailabilityInput = z.infer<typeof deleteAvailabilitySchema>;
 
 export const createApplicationSchema = z.object({
   idMission: z.string().cuid(),
-  messageTravailleur: z.string()
-    .min(10, "Le message doit contenir au moins 10 caractères")
-    .max(1000, "Le message ne doit pas dépasser 1000 caractères")
-    .optional()
-    .nullable(),
 });
 
 export const cancelApplicationSchema = z.object({
@@ -143,7 +138,7 @@ export type CancelApplicationInput = z.infer<typeof cancelApplicationSchema>;
 export const missionFiltersSchema = z.object({
   idVille: z.string().optional(),
   idCategorie: z.number().int().optional(),
-  urgence: z.enum(["Basse", "Moyenne", "Haute"]).optional(),
+  urgence: z.enum(["Normale", "Haute", "Urgente"]).optional(),
   dateDebut: z.date().optional(),
   dateFin: z.date().optional(),
 });

@@ -17,7 +17,7 @@ export async function getAvailableMissions(filters?: MissionFilters) {
 
     // Build where clause
     const where: any = {
-      statut: "Ouverte",
+      statut: "Active",
       ...(validatedFilters.idVille && { institution: { idVille: validatedFilters.idVille } }),
       ...(validatedFilters.urgence && { urgence: validatedFilters.urgence }),
       ...(validatedFilters.dateDebut && {
@@ -171,7 +171,7 @@ export async function getRecommendedMissions() {
     // Find missions matching worker's specialties
     const missions = await prisma.mission.findMany({
       where: {
-        statut: "Ouverte",
+        statut: "Active",
         specialitesRequises: {
           some: {
             idCategorie: {
@@ -243,7 +243,7 @@ export async function getNearbyMissions() {
     // Find missions in the same region
     const missions = await prisma.mission.findMany({
       where: {
-        statut: "Ouverte",
+        statut: "Active",
         institution: {
           ville: {
             idRegion: worker.ville.idRegion,
@@ -300,7 +300,7 @@ export async function searchMissions(keyword: string) {
 
     const missions = await prisma.mission.findMany({
       where: {
-        statut: "Ouverte",
+        statut: "Active",
         OR: [
           { titre: { contains: keyword, mode: "insensitive" } },
           { description: { contains: keyword, mode: "insensitive" } },

@@ -74,7 +74,7 @@ export async function getIssuedSignalements() {
       workerName: s.travailleurConcerne?.utilisateur.nomComplet || "Travailleur",
       motive: s.motif,
       description: s.description,
-      status: s.statut as "en attente" | "traité" | "rejeté",
+      status: s.statut as "En attente" | "Traité" | "Rejeté",
       dateCreated: s.dateSignalement.toISOString().split("T")[0],
       dateProcessed: s.dateTraitement
         ? s.dateTraitement.toISOString().split("T")[0]
@@ -142,7 +142,7 @@ export async function getReceivedSignalements() {
         "Utilisateur",
       motive: s.motif,
       description: s.description,
-      status: s.statut as "en attente" | "traité" | "rejeté",
+      status: s.statut as "En attente" | "Traité" | "Rejeté",
       dateCreated: s.dateSignalement.toISOString().split("T")[0],
       dateProcessed: s.dateTraitement
         ? s.dateTraitement.toISOString().split("T")[0]
@@ -184,7 +184,7 @@ export async function createSignalement(
         idTravailleurConcerne: validatedData.idTravailleurConcerne || null,
         motif: validatedData.motif,
         description: validatedData.description,
-        statut: "en attente",
+        statut: "En attente",
       },
     });
 

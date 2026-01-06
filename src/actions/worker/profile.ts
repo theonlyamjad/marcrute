@@ -1,4 +1,3 @@
-// src/actions/worker/profile.ts
 "use server";
 
 import { prisma } from "@/lib/prisma";

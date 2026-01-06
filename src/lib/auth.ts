@@ -21,9 +21,9 @@ export async function requireRole(role: "Travailleur" | "Institution" | "Adminis
   
   if (user.role !== role) {
     if (user.role === "Travailleur") {
-      redirect("/dashboard");
+      redirect("/worker/dashboard");
     } else if (user.role === "Institution") {
-      redirect("/dashboard");
+      redirect("/enterprise/dashboard");
     } else {
       redirect("/admin/dashboard");
     }

@@ -1,27 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Building2,
-  User,
-  Settings2,
-  Globe,
-  Phone,
-  Mail,
-  MapPin,
-  Lock,
-  Bell,
-  Save,
-  Camera,
-  Loader2,
-} from "lucide-react";
-
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { Building2, Phone, Mail, MapPin, Lock, Save, Loader2, Globe, Eye, EyeClosed } from "lucide-react";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/enterprise-dashboard/components/app-sidebar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import {
   getInstitutionProfile,
   updateInstitution,
@@ -32,55 +19,75 @@ import {
 import { toast } from "sonner";
 
 // --- Interfaces ---
+interface Region {
+  idRegion: string;
+  nomRegion: string;
+  villes: { idVille: string; nomVille: string }[];
+}
+
+interface City {
+  idVille: string;
+  nomVille: string;
+}
 
 const SettingsPage = () => {
-  const [activeSection, setActiveSection] = useState<
-    "institution" | "account" | "prefs"
-  >("institution");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const [profile, setProfile] = useState<{
-    institution?: {
-      nomInstitution?: string | null;
-      adresse?: string | null;
-      localisation?: string | null;
-      url?: string | null;
-      telephoneInstitution?: string | null;
-      siteWeb?: string | null;
-      idVille?: string | null;
-      ville?: unknown;
+    institution: {
+      nomInstitution: string;
+      adresse: string;
+      telephoneInstitution: string;
+      siteWeb: string;
+      url: string;
+      idVille: string | null;
+      ville: {
+        idVille: string;
+        nomVille: string;
+        region: {
+          idRegion: string;
+          nomRegion: string;
+        };
+      } | null;
     };
-    user?: {
-      nomComplet?: string | null;
-      telephone?: string | null;
-      email?: string | null;
+    user: {
+      nomComplet: string;
+      telephone: string;
+      email: string;
     };
   } | null>(null);
-  const [regions, setRegions] = useState<
-    Array<{
-      nomRegion: string;
-      villes: Array<{ idVille: string; nomVille: string }>;
-    }>
-  >([]);
+
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  
   const [institutionData, setInstitutionData] = useState({
     nomInstitution: "",
     adresse: "",
-    localisation: "",
-    url: "",
     telephoneInstitution: "",
     siteWeb: "",
-    idVille: "",
+    url: "",
+    idRegion: undefined as string | undefined,
+    idVille: undefined as string | undefined,
   });
+
   const [userData, setUserData] = useState({
     nomComplet: "",
     telephone: "",
   });
+
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
+  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -92,16 +99,18 @@ const SettingsPage = () => {
 
         if (profileResult.success && profileResult.data) {
           setProfile(profileResult.data);
+          
+          const inst = profileResult.data.institution;
           setInstitutionData({
-            nomInstitution: profileResult.data.institution.nomInstitution || "",
-            adresse: profileResult.data.institution.adresse || "",
-            localisation: profileResult.data.institution.localisation || "",
-            url: profileResult.data.institution.url || "",
-            telephoneInstitution:
-              profileResult.data.institution.telephoneInstitution || "",
-            siteWeb: profileResult.data.institution.siteWeb || "",
-            idVille: profileResult.data.institution.idVille || "",
+            nomInstitution: inst.nomInstitution || "",
+            adresse: inst.adresse || "",
+            telephoneInstitution: inst.telephoneInstitution || "",
+            siteWeb: inst.siteWeb || "",
+            url: inst.url || "",
+            idRegion: inst.ville?.region?.idRegion || undefined,
+            idVille: inst.idVille || undefined,
           });
+
           setUserData({
             nomComplet: profileResult.data.user.nomComplet || "",
             telephone: profileResult.data.user.telephone || "",
@@ -122,58 +131,62 @@ const SettingsPage = () => {
     loadData();
   }, []);
 
-  const handleSaveInstitution = async () => {
-    setSaving(true);
-    try {
-      const result = await updateInstitution(institutionData);
-      if (result.success) {
-        toast.success("Paramètres de l'institution mis à jour");
+  // Update cities when region changes
+  useEffect(() => {
+    if (institutionData.idRegion) {
+      const selectedRegion = regions.find(r => r.idRegion === institutionData.idRegion);
+      if (selectedRegion) {
+        setCities(selectedRegion.villes);
       } else {
-        toast.error(result.error || "Erreur lors de la mise à jour");
+        setCities([]);
       }
-    } catch (error) {
-      toast.error("Erreur lors de la sauvegarde");
-      console.error(error);
-    } finally {
-      setSaving(false);
+      // Reset ville when region changes
+      setInstitutionData(prev => ({ ...prev, idVille: undefined }));
+    } else {
+      setCities([]);
     }
-  };
+  }, [institutionData.idRegion, regions]);
 
-  const handleSaveUser = async () => {
+  const handleSaveAll = async () => {
     setSaving(true);
     try {
-      const result = await updateUserProfile(userData);
-      if (result.success) {
-        toast.success("Profil utilisateur mis à jour");
-      } else {
-        toast.error(result.error || "Erreur lors de la mise à jour");
+      // Save institution
+      const instResult = await updateInstitution({
+        nomInstitution: institutionData.nomInstitution,
+        adresse: institutionData.adresse,
+        telephoneInstitution: institutionData.telephoneInstitution,
+        siteWeb: institutionData.siteWeb,
+        url: institutionData.url,
+        idVille: institutionData.idVille || "",
+      });
+
+      // Save user profile
+      const userResult = await updateUserProfile(userData);
+
+      // Save password if provided
+      let passwordResult = { success: true };
+      if (passwordData.currentPassword && passwordData.newPassword) {
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+          toast.error("Les mots de passe ne correspondent pas");
+          setSaving(false);
+          return;
+        }
+        passwordResult = await updatePassword(passwordData);
       }
-    } catch (error) {
-      toast.error("Erreur lors de la sauvegarde");
-      console.error(error);
-    } finally {
-      setSaving(false);
-    }
-  };
 
-  const handleSavePassword = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("Les mots de passe ne correspondent pas");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const result = await updatePassword(passwordData);
-      if (result.success) {
-        toast.success("Mot de passe mis à jour");
+      if (instResult.success && userResult.success && passwordResult.success) {
+        toast.success("Paramètres mis à jour avec succès");
         setPasswordData({
           currentPassword: "",
           newPassword: "",
           confirmPassword: "",
         });
+        // Reset password visibility
+        setShowCurrentPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
       } else {
-        toast.error(result.error || "Erreur lors de la mise à jour");
+        toast.error("Erreur lors de la mise à jour");
       }
     } catch (error) {
       toast.error("Erreur lors de la sauvegarde");
@@ -183,455 +196,409 @@ const SettingsPage = () => {
     }
   };
 
+  const handleCancel = () => {
+    if (profile) {
+      const inst = profile.institution;
+      setInstitutionData({
+        nomInstitution: inst.nomInstitution || "",
+        adresse: inst.adresse || "",
+        telephoneInstitution: inst.telephoneInstitution || "",
+        siteWeb: inst.siteWeb || "",
+        url: inst.url || "",
+        idRegion: inst.ville?.region?.idRegion || undefined,
+        idVille: inst.idVille || undefined,
+      });
+
+      setUserData({
+        nomComplet: profile.user.nomComplet || "",
+        telephone: profile.user.telephone || "",
+      });
+
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+
+      // Reset password visibility
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+    }
+  };
+
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="bg-white">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b px-6">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger />
-            <h1 className="text-xl font-bold text-[#061E29]">Paramètres</h1>
+    <SidebarProvider
+      style={{
+        "--sidebar-width": "calc(var(--spacing) * 72)",
+        "--header-height": "calc(var(--spacing) * 12)",
+      } as React.CSSProperties}
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <div className="flex flex-1 flex-col p-6 md:p-8 space-y-6 bg-[#F3F4F4]">
+          
+          {/* Header */}
+          <div className="bg-[#1D546D] rounded-xl p-6 shadow-lg">
+            <h1 className="text-3xl font-bold text-white">Paramètres</h1>
+            <p className="text-[#F3F4F4] text-opacity-90 mt-1">
+              Gérez les informations de votre institution et votre compte
+            </p>
           </div>
-        </header>
 
-        <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden">
-          {/* --- Navigation Interne --- */}
-          <aside className="w-full md:w-64 border-r p-4 bg-[#F3F4F4]/20">
-            <nav className="space-y-1">
-              <NavButton
-                active={activeSection === "institution"}
-                onClick={() => setActiveSection("institution")}
-                icon={<Building2 size={18} />}
-                label="Institution"
-              />
-              <NavButton
-                active={activeSection === "account"}
-                onClick={() => setActiveSection("account")}
-                icon={<User size={18} />}
-                label="Compte Utilisateur"
-              />
-              <NavButton
-                active={activeSection === "prefs"}
-                onClick={() => setActiveSection("prefs")}
-                icon={<Settings2 size={18} />}
-                label="Préférences"
-              />
-            </nav>
-          </aside>
-
-          {/* --- Contenu Principal --- */}
-          <main className="flex-1 overflow-y-auto p-8 bg-white">
-            {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-[#1D546D] mb-4" />
-                <p className="text-[#5F9598] text-lg ml-4">
-                  Chargement des paramètres...
-                </p>
-              </div>
-            ) : (
-              <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {/* SECTION : PROFIL INSTITUTION */}
-                {activeSection === "institution" && (
-                  <section className="space-y-6">
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="relative group">
-                        <div className="w-24 h-24 rounded-2xl bg-[#F3F4F4] flex items-center justify-center border-2 border-dashed border-[#5F9598]">
-                          <Building2 size={32} className="text-[#5F9598]" />
+          {loading ? (
+            <Card className="border-none shadow-lg bg-white">
+              <CardContent className="py-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#1D546D] mb-4" />
+                <p className="text-[#5F9598] text-lg">Chargement des paramètres...</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* 2-Column Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* LEFT COLUMN - Institution Info */}
+                <Card className="border-none shadow-lg bg-white">
+                  <CardContent className="p-6 space-y-6">
+                    
+                    {/* Institution Section */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 pb-4 border-b">
+                        <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#1D546D] to-[#5F9598] flex items-center justify-center">
+                          <Building2 className="text-white" size={24} />
                         </div>
-                        <button className="absolute -bottom-2 -right-2 p-2 bg-[#061E29] text-white rounded-lg hover:bg-[#5F9598] transition-colors shadow-lg">
-                          <Camera size={14} />
-                        </button>
+                        <div>
+                          <h2 className="text-xl font-bold text-[#061E29]">
+                            Informations Institution
+                          </h2>
+                          <p className="text-sm text-[#5F9598]">
+                            Détails publics de votre entreprise
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Nom Institution - NON EDITABLE */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-[#061E29]">
+                          Nom de l&apos;institution
+                          <span className="text-xs text-[#5F9598] ml-2">(Non modifiable)</span>
+                        </Label>
+                        <Input
+                          value={institutionData.nomInstitution}
+                          disabled
+                          className="border-[#5F9598] disabled:opacity-60 disabled:cursor-not-allowed"
+                        />
+                      </div>
+
+                      {/* Email - NON EDITABLE */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-[#061E29]">
+                          Email professionnel
+                          <span className="text-xs text-[#5F9598] ml-2">(Non modifiable)</span>
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5F9598]" />
+                          <Input
+                            value={profile?.user?.email || ""}
+                            disabled
+                            className="pl-10 border-[#5F9598] disabled:opacity-60 disabled:cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Téléphone */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-[#061E29]">
+                          Téléphone
+                        </Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5F9598]" />
+                          <Input
+                            placeholder="+212 5XX XXX XXX"
+                            value={institutionData.telephoneInstitution}
+                            onChange={(e) =>
+                              setInstitutionData({
+                                ...institutionData,
+                                telephoneInstitution: e.target.value,
+                              })
+                            }
+                            className="pl-10 border-[#5F9598] focus:border-[#1D546D]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Adresse */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-[#061E29]">
+                          Adresse complète
+                        </Label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-[#5F9598]" />
+                          <Input
+                            placeholder="N° 2, Rue des écoles, Casablanca"
+                            value={institutionData.adresse}
+                            onChange={(e) =>
+                              setInstitutionData({
+                                ...institutionData,
+                                adresse: e.target.value,
+                              })
+                            }
+                            className="pl-10 border-[#5F9598] focus:border-[#1D546D]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Région & Ville on same line */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Région */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-[#061E29]">Région</Label>
+                          <Select
+                            value={institutionData.idRegion}
+                            onValueChange={(value) => {
+                              setInstitutionData({ ...institutionData, idRegion: value });
+                            }}
+                          >
+                            <SelectTrigger className="border-[#5F9598]">
+                              <SelectValue placeholder="Sélectionner une région" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {regions.map(r => (
+                                <SelectItem key={r.idRegion} value={r.idRegion}>
+                                  {r.nomRegion}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Ville */}
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-[#061E29]">Ville</Label>
+                          <Select
+                            value={institutionData.idVille}
+                            onValueChange={(value) => {
+                              setInstitutionData({ ...institutionData, idVille: value });
+                            }}
+                            disabled={!institutionData.idRegion}
+                          >
+                            <SelectTrigger className="border-[#5F9598] disabled:opacity-50">
+                              <SelectValue placeholder="Sélectionner une ville" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cities.map(c => (
+                                <SelectItem key={c.idVille} value={c.idVille}>
+                                  {c.nomVille}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Site Web */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-[#061E29]">
+                          Site Web
+                        </Label>
+                        <div className="relative">
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5F9598]" />
+                          <Input
+                            placeholder="https://www.exemple.ma"
+                            value={institutionData.siteWeb}
+                            onChange={(e) =>
+                              setInstitutionData({
+                                ...institutionData,
+                                siteWeb: e.target.value,
+                              })
+                            }
+                            className="pl-10 border-[#5F9598] focus:border-[#1D546D]"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Localisation */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-[#061E29]">
+                          Localisation
+                        </Label>
+                        <Input
+                          placeholder="https://www.google.com/maps"
+                          value={institutionData.url}
+                          onChange={(e) =>
+                            setInstitutionData({
+                              ...institutionData,
+                              url: e.target.value,
+                            })
+                          }
+                          className="border-[#5F9598] focus:border-[#1D546D]"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* RIGHT COLUMN - Password + Action Buttons */}
+                <Card className="border-none shadow-lg bg-white">
+                  <CardContent className="p-6 space-y-6">
+                    <div className="flex items-center gap-3 pb-4 border-b">
+                      <div className="w-12 h-12 rounded-xl bg-linear-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                        <Lock className="text-white" size={24} />
                       </div>
                       <div>
                         <h2 className="text-xl font-bold text-[#061E29]">
-                          Profil de l&apos;institution
+                          Changer le mot de passe
                         </h2>
-                        <p className="text-sm text-gray-500">
-                          Gérez les informations publiques de votre entreprise
+                        <p className="text-sm text-[#5F9598]">
+                          Sécurité de votre compte
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <InputField
-                        label="Nom de l'institution"
-                        placeholder="Ex: OCP Group"
-                        value={institutionData.nomInstitution}
-                        onChange={(e) =>
-                          setInstitutionData({
-                            ...institutionData,
-                            nomInstitution: e.target.value,
-                          })
-                        }
-                      />
-                      <InputField
-                        label="Téléphone"
-                        placeholder="+212 5XX XXX XXX"
-                        icon={<Phone size={14} />}
-                        value={institutionData.telephoneInstitution}
-                        onChange={(e) =>
-                          setInstitutionData({
-                            ...institutionData,
-                            telephoneInstitution: e.target.value,
-                          })
-                        }
-                      />
-                      <div className="md:col-span-2">
-                        <InputField
-                          label="Adresse complète"
-                          placeholder="N° 2, Rue des écoles, Casablanca"
-                          icon={<MapPin size={14} />}
-                          value={institutionData.adresse}
+                    {/* Current Password */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-[#061E29]">
+                        Mot de passe actuel
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type={showCurrentPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={passwordData.currentPassword}
                           onChange={(e) =>
-                            setInstitutionData({
-                              ...institutionData,
-                              adresse: e.target.value,
+                            setPasswordData({
+                              ...passwordData,
+                              currentPassword: e.target.value,
                             })
                           }
+                          className="border-[#5F9598] focus:border-[#1D546D] pr-10"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5F9598] hover:text-[#1D546D] transition-colors"
+                        >
+                          {showCurrentPassword ? (
+                            <EyeClosed className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
-                      <div>
-                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1 block mb-1.5">
-                          Ville / Région
-                        </label>
-                        <select
-                          className="w-full border rounded-xl py-2.5 px-4 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none"
-                          value={institutionData.idVille}
+                    </div>
+
+                    {/* New Password */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-[#061E29]">
+                        Nouveau mot de passe
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type={showNewPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={passwordData.newPassword}
                           onChange={(e) =>
-                            setInstitutionData({
-                              ...institutionData,
-                              idVille: e.target.value,
+                            setPasswordData({
+                              ...passwordData,
+                              newPassword: e.target.value,
                             })
                           }
+                          className="border-[#5F9598] focus:border-[#1D546D] pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5F9598] hover:text-[#1D546D] transition-colors"
                         >
-                          <option value="">Sélectionner une ville</option>
-                          {regions.map((region) =>
-                            region.villes.map(
-                              (ville: {
-                                idVille: string;
-                                nomVille: string;
-                              }) => (
-                                <option
-                                  key={ville.idVille}
-                                  value={ville.idVille}
-                                >
-                                  {ville.nomVille} - {region.nomRegion}
-                                </option>
-                              )
-                            )
+                          {showNewPassword ? (
+                            <EyeClosed className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
                           )}
-                        </select>
-                      </div>
-                      <InputField
-                        label="Coordonnées GPS"
-                        placeholder="33.5731, -7.5898"
-                        value={institutionData.localisation}
-                        onChange={(e) =>
-                          setInstitutionData({
-                            ...institutionData,
-                            localisation: e.target.value,
-                          })
-                        }
-                      />
-                      <InputField
-                        label="Site Web"
-                        placeholder="https://www.exemple.ma"
-                        icon={<Globe size={14} />}
-                        value={institutionData.siteWeb}
-                        onChange={(e) =>
-                          setInstitutionData({
-                            ...institutionData,
-                            siteWeb: e.target.value,
-                          })
-                        }
-                      />
-                      <InputField
-                        label="URL personnalisée"
-                        placeholder="marcrute.ma/ocp"
-                        value={institutionData.url}
-                        onChange={(e) =>
-                          setInstitutionData({
-                            ...institutionData,
-                            url: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  </section>
-                )}
-
-                {/* SECTION : COMPTE UTILISATEUR */}
-                {activeSection === "account" && (
-                  <section className="space-y-6">
-                    <h2 className="text-xl font-bold text-[#061E29] mb-6">
-                      Compte Utilisateur
-                    </h2>
-                    <div className="grid grid-cols-1 gap-6">
-                      <InputField
-                        label="Nom complet du responsable"
-                        placeholder="Ahmed Benjelloun"
-                        value={userData.nomComplet}
-                        onChange={(e) =>
-                          setUserData({
-                            ...userData,
-                            nomComplet: e.target.value,
-                          })
-                        }
-                      />
-                      <InputField
-                        label="Email professionnel"
-                        placeholder={
-                          profile?.user?.email || "a.benjelloun@institution.ma"
-                        }
-                        icon={<Mail size={14} />}
-                        disabled
-                      />
-                      <InputField
-                        label="Téléphone direct"
-                        placeholder="+212 6XX XXX XXX"
-                        value={userData.telephone}
-                        onChange={(e) =>
-                          setUserData({
-                            ...userData,
-                            telephone: e.target.value,
-                          })
-                        }
-                      />
-
-                      <div className="pt-6 border-t">
-                        <h3 className="text-sm font-bold text-[#061E29] mb-4 flex items-center gap-2">
-                          <Lock size={16} /> Changer le mot de passe
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <InputField
-                            label="Mot de passe actuel"
-                            type="password"
-                            value={passwordData.currentPassword}
-                            onChange={(e) =>
-                              setPasswordData({
-                                ...passwordData,
-                                currentPassword: e.target.value,
-                              })
-                            }
-                          />
-                          <div></div>
-                          <InputField
-                            label="Nouveau mot de passe"
-                            type="password"
-                            value={passwordData.newPassword}
-                            onChange={(e) =>
-                              setPasswordData({
-                                ...passwordData,
-                                newPassword: e.target.value,
-                              })
-                            }
-                          />
-                          <InputField
-                            label="Confirmer le mot de passe"
-                            type="password"
-                            value={passwordData.confirmPassword}
-                            onChange={(e) =>
-                              setPasswordData({
-                                ...passwordData,
-                                confirmPassword: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                )}
-
-                {/* SECTION : PRÉFÉRENCES */}
-                {activeSection === "prefs" && (
-                  <section className="space-y-8">
-                    <h2 className="text-xl font-bold text-[#061E29]">
-                      Préférences de la plateforme
-                    </h2>
-
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                        <Bell size={16} /> Notifications
-                      </h3>
-                      <div className="space-y-3">
-                        <ToggleItem label="Recevoir les nouveaux rapports par email" />
-                        <ToggleItem label="Alertes de fin de mission" />
-                        <ToggleItem label="Newsletter mensuelle MARcrute" />
+                        </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t">
-                      <div>
-                        <label className="text-xs font-bold text-gray-400 uppercase block mb-2">
-                          Langue de l&apos;interface
-                        </label>
-                        <select className="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none">
-                          <option>Français (FR)</option>
-                          <option>Arabe (AR)</option>
-                          <option>Anglais (EN)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-gray-400 uppercase block mb-2">
-                          Fuseau horaire
-                        </label>
-                        <select className="w-full border rounded-xl p-3 text-sm focus:ring-2 focus:ring-[#5F9598] outline-none">
-                          <option>(GMT+01:00) Casablanca</option>
-                          <option>(GMT+00:00) London</option>
-                        </select>
+                    {/* Confirm Password */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-[#061E29]">
+                        Confirmer le mot de passe
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={passwordData.confirmPassword}
+                          onChange={(e) =>
+                            setPasswordData({
+                              ...passwordData,
+                              confirmPassword: e.target.value,
+                            })
+                          }
+                          className="border-[#5F9598] focus:border-[#1D546D] pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5F9598] hover:text-[#1D546D] transition-colors"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeClosed className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
                     </div>
-                  </section>
-                )}
 
-                {/* BARRE D'ACTION FIXE EN BAS DU CONTENU */}
-                <div className="mt-12 pt-6 border-t flex justify-end gap-3">
-                  <button
-                    className="px-6 py-2 border rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 transition-all"
-                    onClick={() => {
-                      if (activeSection === "institution") {
-                        setInstitutionData({
-                          nomInstitution:
-                            profile?.institution?.nomInstitution || "",
-                          adresse: profile?.institution?.adresse || "",
-                          localisation:
-                            profile?.institution?.localisation || "",
-                          url: profile?.institution?.url || "",
-                          telephoneInstitution:
-                            profile?.institution?.telephoneInstitution || "",
-                          siteWeb: profile?.institution?.siteWeb || "",
-                          idVille: profile?.institution?.idVille || "",
-                        });
-                      } else if (activeSection === "account") {
-                        setUserData({
-                          nomComplet: profile?.user?.nomComplet || "",
-                          telephone: profile?.user?.telephone || "",
-                        });
-                        setPasswordData({
-                          currentPassword: "",
-                          newPassword: "",
-                          confirmPassword: "",
-                        });
-                      }
-                    }}
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    className="px-6 py-2 bg-[#061E29] text-white rounded-xl text-sm font-bold hover:bg-[#1D546D] transition-all flex items-center gap-2 shadow-lg shadow-black/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={() => {
-                      if (activeSection === "institution") {
-                        handleSaveInstitution();
-                      } else if (activeSection === "account") {
-                        if (
-                          passwordData.currentPassword ||
-                          passwordData.newPassword
-                        ) {
-                          handleSavePassword();
-                        }
-                        handleSaveUser();
-                      }
-                    }}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />{" "}
-                        Enregistrement...
-                      </>
-                    ) : (
-                      <>
-                        <Save size={16} /> Enregistrer les modifications
-                      </>
-                    )}
-                  </button>
-                </div>
+                    <div className="pt-4">
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <p className="text-xs text-orange-800">
+                          <strong>Note:</strong> Laissez ces champs vides si vous ne souhaitez pas changer votre mot de passe.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons - Inside Password Card */}
+                    <div className="pt-6 border-t">
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={handleCancel}
+                          disabled={saving}
+                          className="border-[#1D546D] text-[#1D546D] hover:bg-[#1D546D] hover:text-white"
+                        >
+                          Annuler
+                        </Button>
+                        <Button
+                          onClick={handleSaveAll}
+                          disabled={saving}
+                          className="bg-[#1D546D] hover:bg-[#5F9598] text-white"
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Enregistrement...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Enregistrer les modifications
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            )}
-          </main>
+            </>
+          )}
         </div>
       </SidebarInset>
     </SidebarProvider>
   );
 };
-
-// --- Sous-composants réutilisables ---
-
-const NavButton = ({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-      active
-        ? "bg-white text-[#5F9598] shadow-sm"
-        : "text-gray-500 hover:text-[#061E29] hover:bg-white/50"
-    }`}
-  >
-    {icon} {label}
-  </button>
-);
-
-const InputField = ({
-  label,
-  placeholder,
-  type = "text",
-  icon,
-  value,
-  onChange,
-  disabled = false,
-}: {
-  label: string;
-  placeholder?: string;
-  type?: string;
-  icon?: React.ReactNode;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  disabled?: boolean;
-}) => (
-  <div className="space-y-1.5">
-    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-      {label}
-    </label>
-    <div className="relative">
-      {icon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5F9598]">
-          {icon}
-        </div>
-      )}
-      <input
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={`w-full border rounded-xl py-2.5 px-4 ${
-          icon ? "pl-10" : ""
-        } text-sm focus:ring-2 focus:ring-[#5F9598] outline-none transition-all hover:border-[#5F9598]/50 disabled:bg-gray-100 disabled:cursor-not-allowed`}
-      />
-    </div>
-  </div>
-);
-
-const ToggleItem = ({ label }: { label: string }) => (
-  <label className="flex items-center justify-between p-1 cursor-pointer group">
-    <span className="text-sm text-gray-600 group-hover:text-[#061E29] transition-colors">
-      {label}
-    </span>
-    <div className="relative inline-flex items-center cursor-pointer">
-      <input type="checkbox" className="sr-only peer" />
-      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#5F9598]"></div>
-    </div>
-  </label>
-);
 
 export default SettingsPage;
