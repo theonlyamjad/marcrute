@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuSeparator,DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
 import {User,FileText,Calendar,Star,Settings,LogOut,ChevronDown,ChevronUp,} from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 interface WorkerNavbarProps {
   user: {
@@ -18,9 +18,24 @@ interface WorkerNavbarProps {
 
 export function WorkerNavbar({ user }: WorkerNavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session } = useSession();
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/worker/sign-in" });
+    const role = session?.user?.role || "Travailleur";
+    let callbackUrl = "/worker/sign-in";
+    
+    if (role === "Admin") {
+      callbackUrl = "/admin/sign-in";
+    } else if (role === "Institution") {
+      callbackUrl = "/enterprise/sign-in";
+    } else if (role === "Travailleur") {
+      callbackUrl = "/worker/sign-in";
+    }
+    
+    // Utiliser redirect: false et gérer la redirection manuellement
+    await signOut({ redirect: false });
+    // Forcer la redirection vers la bonne page
+    window.location.href = callbackUrl;
   };
 
   return (
