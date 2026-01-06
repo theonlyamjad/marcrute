@@ -170,9 +170,15 @@ async signIn({ user, account, profile }) {
     },
     
     async redirect({ url, baseUrl }) {
-      if (url.startsWith(baseUrl)) {
+      // Si l'URL contient un callbackUrl, l'utiliser
+      if (url && url.startsWith(baseUrl)) {
         return url;
       }
+      // Si l'URL contient /admin/sign-in, /enterprise/sign-in ou /worker/sign-in, l'utiliser
+      if (url && (url.includes('/admin/sign-in') || url.includes('/enterprise/sign-in') || url.includes('/worker/sign-in'))) {
+        return url;
+      }
+      // Par défaut, rediriger vers worker/dashboard (pour les nouvelles connexions)
       return `${baseUrl}/worker/dashboard`;
     },
   },
