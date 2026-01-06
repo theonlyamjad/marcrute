@@ -10,13 +10,15 @@ export async function requireAuth() {
   const user = await getCurrentUser();
   
   if (!user) {
+    // Rediriger vers la page de connexion appropriée
+    // Le middleware devrait normalement gérer cela, mais on fait une double vérification
     redirect("/worker/sign-in");
   }
   
   return user;
 }
 
-export async function requireRole(role: "Travailleur" | "Institution" | "Administrateur") {
+export async function requireRole(role: "Travailleur" | "Institution" | "Admin") {
   const user = await requireAuth();
   
   if (user.role !== role) {
@@ -44,5 +46,5 @@ export async function isEnterprise() {
 
 export async function isAdmin() {
   const user = await getCurrentUser();
-  return user?.role === "Administrateur";
+  return user?.role === "Admin";
 }
