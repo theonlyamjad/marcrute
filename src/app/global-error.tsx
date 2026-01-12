@@ -44,7 +44,7 @@ export default function GlobalError({
               Erreur système
             </h2>
             <p style={{color: '#5F9598',marginBottom: '2rem',fontSize: '1.125rem'}}>
-              Une erreur critique s'est produite. Veuillez actualiser la page.
+              Une erreur critique s&apos;est produite. Veuillez actualiser la page.
             </p>
             <button
               onClick={reset}
