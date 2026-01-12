@@ -15,29 +15,42 @@ export default function GlobalError({
 
   return (
     <html lang="en">
+      <head>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              background-color: #061E29;
+              color: #F3F4F4;
+            }
+          `
+        }} />
+      </head>
       <body>
-        <div className="min-h-screen bg-[#061E29] flex items-center justify-center px-4">
-          <div className="text-center max-w-2xl">
-            <div className="mb-8 relative w-full h-64 md:h-96 mx-auto">
-              <img
-                src="/assets/images/error-critical.png"
-                alt="Erreur critique"
-                className="w-full h-full object-contain"
-              />
+        <div style={{minHeight: '100vh',display: 'flex',alignItems: 'center',justifyContent: 'center',padding: '1rem',backgroundColor: '#061E29'}}>
+          <div style={{textAlign: 'center',maxWidth: '42rem'}}>
+            <div style={{marginBottom: '2rem',width: '100%',height: '24rem',display: 'flex',alignItems: 'center',justifyContent: 'center'}}>
+              <img src="/assets/images/error-critical.png"alt="Erreur critique"style={{maxWidth: '100%',maxHeight: '100%',objectFit: 'contain'}}/>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-[#5F9598] mb-4">
+            <h1 style={{fontSize: '4.5rem',fontWeight: 'bold',color: '#5F9598',marginBottom: '1rem'}}>
               Erreur
             </h1>
-            <h2 className="text-2xl md:text-3xl font-semibold text-[#F3F4F4] mb-4">
+            <h2 style={{fontSize: '1.875rem',fontWeight: '600',color: '#F3F4F4',marginBottom: '1rem'}}>
               Erreur système
             </h2>
-            <p className="text-[#5F9598] mb-8 text-lg">
+            <p style={{color: '#5F9598',marginBottom: '2rem',fontSize: '1.125rem'}}>
               Une erreur critique s'est produite. Veuillez actualiser la page.
             </p>
             <button
               onClick={reset}
-              className="px-8 py-3 bg-[#1D546D] text-[#F3F4F4] rounded-lg hover:bg-[#5F9598] transition-colors font-medium"
-            >
+              style={{padding: '0.75rem 2rem',backgroundColor: '#1D546D',color: '#F3F4F4',borderRadius: '0.5rem',border: 'none',fontSize: '1rem',fontWeight: '500',cursor: 'pointer',transition: 'background-color 0.2s'}}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#5F9598'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1D546D'}>
               Actualiser
             </button>
           </div>
