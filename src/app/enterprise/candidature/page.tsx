@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from '@/components/ui/select';
 import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle,DialogTrigger,} from '@/components/ui/dialog';
 import {Tabs,TabsContent,TabsList,TabsTrigger,} from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Check, X, Eye, Star, Briefcase, GraduationCap, Calendar, Filter, MessageSquare, Loader2 } from 'lucide-react';
 import { getCandidatures, getMissionsForFilter, acceptCandidature, rejectCandidature } from '@/actions/enterprise/candidatures';
 import { toast } from 'sonner';
@@ -150,23 +149,33 @@ const ResponseDialog: React.FC<{
   );
 };
 
+// Helper function to get initials from full name
+const getInitials = (nomComplet: string): string => {
+  const parts = nomComplet.trim().split(' ');
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() || '';
+  // First letter of first word (prénom) + first letter of last word (nom)
+  const prenom = parts[0][0]?.toUpperCase() || '';
+  const nom = parts[parts.length - 1][0]?.toUpperCase() || '';
+  return prenom + nom;
+};
+
 const CandidatureCard: React.FC<{
   candidature: Candidature;
   onAccept: (message: string) => void;
   onReject: (message: string) => void;
   onViewProfile: () => void;
 }> = ({ candidature, onAccept, onReject, onViewProfile }) => {
+  const initials = getInitials(candidature.travailleur.nomComplet);
+  
   return (
     <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 bg-white">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex gap-4 flex-1">
-            <Avatar className="h-16 w-16 border-2 border-[#5F9598]">
-              <AvatarImage src={candidature.travailleur.photo} alt={candidature.travailleur.nomComplet} />
-              <AvatarFallback className="bg-[#1D546D] text-white">
-                {candidature.travailleur.nomComplet.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
+            <div className="h-16 w-16 rounded-full border-2 border-[#5F9598] bg-[#1D546D] flex items-center justify-center text-white font-semibold text-lg">
+              {initials}
+            </div>
             <div className="space-y-2 flex-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <CardTitle className="text-xl text-[#061E29]">{candidature.travailleur.nomComplet}</CardTitle>
