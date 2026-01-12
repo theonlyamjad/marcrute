@@ -151,17 +151,30 @@ const SettingsPage = () => {
     setSaving(true);
     try {
       // Save institution
+      // Clean phone number (remove spaces) before sending
+      const cleanPhone = institutionData.telephoneInstitution 
+        ? institutionData.telephoneInstitution.replace(/\s/g, '') 
+        : institutionData.telephoneInstitution;
+      
       const instResult = await updateInstitution({
         nomInstitution: institutionData.nomInstitution,
         adresse: institutionData.adresse,
-        telephoneInstitution: institutionData.telephoneInstitution,
+        telephoneInstitution: cleanPhone,
         siteWeb: institutionData.siteWeb,
         url: institutionData.url,
         idVille: institutionData.idVille || "",
       });
 
       // Save user profile
-      const userResult = await updateUserProfile(userData);
+      // Clean phone number (remove spaces) before sending
+      const cleanUserPhone = userData.telephone 
+        ? userData.telephone.replace(/\s/g, '') 
+        : userData.telephone;
+      
+      const userResult = await updateUserProfile({
+        ...userData,
+        telephone: cleanUserPhone,
+      });
 
       // Save password if provided
       let passwordResult = { success: true };
@@ -174,20 +187,36 @@ const SettingsPage = () => {
         passwordResult = await updatePassword(passwordData);
       }
 
-      if (instResult.success && userResult.success && passwordResult.success) {
-        toast.success("Paramètres mis à jour avec succès");
-        setPasswordData({
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        });
-        // Reset password visibility
-        setShowCurrentPassword(false);
-        setShowNewPassword(false);
-        setShowConfirmPassword(false);
-      } else {
-        toast.error("Erreur lors de la mise à jour");
+      // Check each result and show specific error messages
+      if (!instResult.success) {
+        toast.error(instResult.error || "Erreur lors de la mise à jour de l'institution");
+        setSaving(false);
+        return;
       }
+      
+      if (!userResult.success) {
+        toast.error(userResult.error || "Erreur lors de la mise à jour du profil utilisateur");
+        setSaving(false);
+        return;
+      }
+      
+      if (!passwordResult.success) {
+        toast.error(passwordResult.error || "Erreur lors de la mise à jour du mot de passe");
+        setSaving(false);
+        return;
+      }
+
+      // All succeeded
+      toast.success("Paramètres mis à jour avec succès");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      // Reset password visibility
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
     } catch (error) {
       toast.error("Erreur lors de la sauvegarde");
       console.error(error);
