@@ -304,6 +304,17 @@ export async function createMission(input: CreateMissionInput) {
     // Récupérer ou créer l'institution
     const institution = await getOrCreateInstitution(user.id);
 
+    // Vérifier que le profil de l'institution est complet
+    const { isInstitutionProfileComplete } = await import("./settings");
+    const profileCheck = await isInstitutionProfileComplete();
+    
+    if (!profileCheck.success || !profileCheck.data?.isComplete) {
+      return {
+        success: false,
+        error: "Veuillez compléter votre profil avant de créer une mission. Rendez-vous dans les paramètres pour compléter les informations manquantes.",
+      };
+    }
+
     // Créer la mission avec les spécialités requises
     const mission = await prisma.mission.create({
       data: {
