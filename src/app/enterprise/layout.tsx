@@ -7,7 +7,6 @@ export default async function EnterpriseLayout({
 }>) {
   // Vérifier que l'utilisateur est une institution
   await requireRole("Institution");
-
   return (
     <div>
       {children}
