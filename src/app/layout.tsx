@@ -24,7 +24,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  throw new Error("Testing global error!");
+
   return (
     <html lang="en">
       <body
