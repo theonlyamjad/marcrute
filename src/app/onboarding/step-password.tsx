@@ -4,17 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { KeyRound, Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { setPasswordForGoogleUser } from "@/actions/worker/set-password";
 
 interface StepPasswordProps {
   onNext: () => void;
-  onBack: () => void;
+  onBack?: () => void;
+  isFirstStep?: boolean; // New prop to hide back button
 }
 
-export function StepPassword({ onNext, onBack }: StepPasswordProps) {
+export function StepPassword({ onNext, onBack, isFirstStep = false }: StepPasswordProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,7 +37,6 @@ export function StepPassword({ onNext, onBack }: StepPasswordProps) {
 
     setIsLoading(true);
 
-    // TODO: Call your API to set password
     const result = await setPasswordForGoogleUser(password);
 
     setIsLoading(false);
@@ -126,16 +126,18 @@ export function StepPassword({ onNext, onBack }: StepPasswordProps) {
       </Card>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onBack}
-          className="border-[#1D546D]/30"
-        >
-          <ChevronLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
+      <div className={`flex items-center ${isFirstStep ? 'justify-end' : 'justify-between'} pt-4`}>
+        {!isFirstStep && onBack && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onBack}
+            className="border-[#1D546D]/30"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Retour
+          </Button>
+        )}
         <Button
           type="submit"
           disabled={isLoading || !password || !confirmPassword}

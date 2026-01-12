@@ -18,6 +18,8 @@ export async function getWorkerProfile() {
         utilisateur: {
           select: {
             email: true,
+            prenom: true,
+            nom: true,
             nomComplet: true,
             telephone: true,
             role: true,
@@ -95,13 +97,21 @@ export async function updateWorkerProfile(input: UpdateProfileInput) {
     }
 
     // Update user data if provided
-    if (validatedData.nomComplet || validatedData.telephone) {
+    if (validatedData.prenom || validatedData.nom || validatedData.telephone) {
+      const updateData: any = {};
+      
+      if (validatedData.prenom) updateData.prenom = validatedData.prenom;
+      if (validatedData.nom) updateData.nom = validatedData.nom;
+      if (validatedData.telephone) updateData.telephone = validatedData.telephone;
+      
+      // Also update nomComplet for backwards compatibility
+      if (validatedData.prenom && validatedData.nom) {
+        updateData.nomComplet = `${validatedData.prenom} ${validatedData.nom}`;
+      }
+
       await prisma.utilisateur.update({
         where: { idUtilisateur: user.id },
-        data: {
-          ...(validatedData.nomComplet && { nomComplet: validatedData.nomComplet }),
-          ...(validatedData.telephone && { telephone: validatedData.telephone }),
-        },
+        data: updateData,
       });
     }
 
@@ -127,6 +137,7 @@ export async function updateWorkerProfile(input: UpdateProfileInput) {
 
     revalidatePath("/worker/profile");
     revalidatePath("/worker/dashboard");
+    revalidatePath("/worker/settings");
 
     return { success: true, data: updatedWorker };
   } catch (error) {
@@ -163,8 +174,9 @@ export async function getProfileCompleteness() {
     let completeness = 0;
     const totalFields = 10;
 
-    // Basic info (40%)
-    if (worker.utilisateur.nomComplet) completeness += 1;
+    // Basic info (40%) - Updated to check prenom and nom
+    if (worker.utilisateur.prenom) completeness += 0.5;
+    if (worker.utilisateur.nom) completeness += 0.5;
     if (worker.utilisateur.telephone) completeness += 1;
     if (worker.idVille) completeness += 1;
     if (worker.biographie) completeness += 1;

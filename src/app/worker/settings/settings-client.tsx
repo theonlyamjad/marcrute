@@ -15,7 +15,8 @@ import { toast } from "sonner";
 
 interface SettingsPageClientProps {
   initialProfile: {
-    nomComplet: string;
+    prenom: string;
+    nom: string;
     email: string;
     telephone: string;
     idVille: string;
@@ -64,9 +65,19 @@ export function SettingsPageClient({
   }, [selectedRegion, villes, profile.idVille]);
 
   const handleSaveProfile = async () => {
-    // Basic validation
-    if (profile.telephone && !/^[\+\d\s\-\(\)]+$/.test(profile.telephone)) {
-      toast.error("Format de téléphone invalide");
+    // Validation
+    if (!profile.prenom || profile.prenom.trim().length < 2) {
+      toast.error("Le prénom doit contenir au moins 2 caractères");
+      return;
+    }
+
+    if (!profile.nom || profile.nom.trim().length < 2) {
+      toast.error("Le nom doit contenir au moins 2 caractères");
+      return;
+    }
+
+    if (profile.telephone && !/^(\+212|0)[5-7]\d{8}$/.test(profile.telephone)) {
+      toast.error("Format de téléphone invalide (ex: +212612345678 ou 0612345678)");
       return;
     }
 
@@ -74,6 +85,8 @@ export function SettingsPageClient({
 
     try {
       const result = await updateWorkerProfile({
+        prenom: profile.prenom,
+        nom: profile.nom,
         telephone: profile.telephone || undefined,
         idVille: profile.idVille || null,
         biographie: profile.biographie || null,
@@ -152,20 +165,37 @@ export function SettingsPageClient({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Name and Email (readonly) */}
+                {/* Prénom and Nom - NOW SEPARATE */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Nom Complet</Label>
+                    <Label>Prénom *</Label>
                     <Input
-                      value={profile.nomComplet}
-                      disabled
-                      className="bg-gray-100"
+                      value={profile.prenom}
+                      onChange={(e) =>
+                        setProfile({ ...profile, prenom: e.target.value })
+                      }
+                      placeholder="Ahmed"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input value={profile.email} disabled className="bg-gray-100" />
+                    <Label>Nom *</Label>
+                    <Input
+                      value={profile.nom}
+                      onChange={(e) =>
+                        setProfile({ ...profile, nom: e.target.value })
+                      }
+                      placeholder="Bennani"
+                    />
                   </div>
+                </div>
+
+                {/* Email (readonly) */}
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={profile.email} disabled className="bg-gray-100" />
+                  <p className="text-xs text-gray-500">
+                    L'email ne peut pas être modifié
+                  </p>
                 </div>
 
                 {/* Phone */}
@@ -176,10 +206,10 @@ export function SettingsPageClient({
                     onChange={(e) =>
                       setProfile({ ...profile, telephone: e.target.value })
                     }
-                    placeholder="+212 6 00 00 00 00"
+                    placeholder="+212612345678 ou 0612345678"
                   />
                   <p className="text-xs text-gray-500">
-                    Format: +212 6 00 00 00 00 ou 0600000000
+                    Format: +212612345678 ou 0612345678
                   </p>
                 </div>
 

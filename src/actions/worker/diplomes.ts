@@ -77,6 +77,7 @@ export async function addWorkerDiploma(input: AddDiplomaInput) {
 
     revalidatePath("/worker/profile");
     revalidatePath("/worker/cv");
+    // ✅ Don't revalidate onboarding - let them manage CV freely
 
     return { success: true, data: diploma };
   } catch (error) {
@@ -89,7 +90,7 @@ export async function addWorkerDiploma(input: AddDiplomaInput) {
 }
 
 /**
- * Delete a diploma
+ * Delete a diploma - UPDATED to not trigger onboarding redirect
  */
 export async function deleteWorkerDiploma(input: DeleteDiplomaInput) {
   try {
@@ -126,8 +127,10 @@ export async function deleteWorkerDiploma(input: DeleteDiplomaInput) {
       where: { idDiplome: validatedData.idDiplome },
     });
 
-    revalidatePath("/worker/profile");
+    // ✅ Only revalidate CV and profile pages, NOT onboarding
     revalidatePath("/worker/cv");
+    revalidatePath("/worker/profile");
+    // DON'T revalidate /worker/dashboard to avoid redirect check
 
     return { success: true, message: "Diplôme supprimé avec succès" };
   } catch (error) {

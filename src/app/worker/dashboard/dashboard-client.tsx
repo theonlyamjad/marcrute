@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from "@/components/ui/select";
 import {MapPin,Calendar,Building2,ChevronLeft,ChevronRight,Search,Filter,AlertCircle,Clock,CheckCircle,FileText,Target,} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ProfileCompletionAlert } from "@/components/ui/worker/profile-completion-alert"; 
+
 
 interface DashboardPageClientProps {
   initialMissions: any[];
@@ -16,6 +18,7 @@ interface DashboardPageClientProps {
   stats: any;
   specialtyCategories: any[];
   regions: any[];
+  completion: any;
 }
 
 export function DashboardPageClient({
@@ -24,6 +27,7 @@ export function DashboardPageClient({
   stats,
   regions,
   specialtyCategories,
+  completion,
 }: DashboardPageClientProps) {
   const [missions] = useState(initialMissions);
   const [searchTerm, setSearchTerm] = useState("");
@@ -171,6 +175,11 @@ export function DashboardPageClient({
             Bienvenue {profile?.utilisateur?.nomComplet || ""}! Découvrez les missions qui correspondent à votre profil
           </p>
         </div>
+
+        {/* Profile Completion Alert */}
+        {completion && (
+          <ProfileCompletionAlert completion={completion} />
+        )}
 
         {/* Stats Cards */}
         {stats && (

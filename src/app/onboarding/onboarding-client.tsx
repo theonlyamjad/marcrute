@@ -27,22 +27,35 @@ export function OnboardingClient({ isGoogleUser, completion }: OnboardingClientP
   const router = useRouter();
   
   const getInitialStep = () => {
-    if (isGoogleUser && !completion.hasPassword) return 0;
-    if (!completion.hasPhone || !completion.hasCity) return isGoogleUser ? 2 : 1;
-    if (!completion.hasExperience || !completion.hasDiploma || !completion.hasSpecialty) {
-      return isGoogleUser ? 3 : 2;
+    // Google users: password (0) -> personal (1) -> professional (2)
+    // Regular users: welcome (0) -> personal (1) -> professional (2)
+    
+    if (isGoogleUser) {
+      if (!completion.hasPassword) return 0; // Password step
+      if (!completion.hasPhone || !completion.hasCity) return 1; // Personal step
+      if (!completion.hasExperience || !completion.hasDiploma || !completion.hasSpecialty) {
+        return 2; // Professional step
+      }
+    } else {
+      if (!completion.hasPhone || !completion.hasCity) return 1; // Personal step (after welcome)
+      if (!completion.hasExperience || !completion.hasDiploma || !completion.hasSpecialty) {
+        return 2; // Professional step
+      }
+      return 0; // Start at welcome if nothing completed
     }
+    
     return 0;
   };
 
   const [currentStep, setCurrentStep] = useState(getInitialStep());
 
+  // Define steps based on user type - GOOGLE USERS DON'T NEED WELCOME
   const steps = isGoogleUser
-    ? ["welcome", "password", "personal", "professional"]
+    ? ["password", "personal", "professional"]
     : ["welcome", "personal", "professional"];
 
   const stepTitles = isGoogleUser
-    ? ["Bienvenue", "Mot de passe", "Informations personnelles", "Informations professionnelles"]
+    ? ["Mot de passe", "Informations personnelles", "Informations professionnelles"]
     : ["Bienvenue", "Informations personnelles", "Informations professionnelles"];
 
   const totalSteps = steps.length;

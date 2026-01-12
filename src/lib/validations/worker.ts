@@ -6,7 +6,8 @@ import { z } from "zod";
 // ========================================
 
 export const updateProfileSchema = z.object({
-  nomComplet: z.string().min(2, "Le nom doit contenir au moins 2 caractères").max(100).optional(),
+  prenom: z.string().min(2, "Le prénom doit contenir au moins 2 caractères").max(50).optional(),
+  nom: z.string().min(2, "Le nom doit contenir au moins 2 caractères").max(50).optional(),
   telephone: z.string().regex(/^(\+212|0)[5-7]\d{8}$/,"Le numéro doit commencer par +212 ou 0, suivi de 5/6/7 et 8 chiffres").optional(),
   idVille: z.string().optional().nullable(),
   biographie: z.string().max(1000, "La biographie ne doit pas dépasser 1000 caractères").optional().nullable(),

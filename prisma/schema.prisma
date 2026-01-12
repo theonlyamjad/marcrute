@@ -1,6 +1,3 @@
-// This is your Prisma schema file
-// UPDATED VERSION - Numeric IDs for Categories
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -20,6 +17,8 @@ model Utilisateur {
   emailVerified    DateTime?       @map("email_verified")
   hashMotDePasse   String?         @map("hash_mot_de_passe")
   role             String
+  prenom           String?         
+  nom              String?         
   nomComplet       String?         @map("nom_complet")
   telephone        String?
   dateCreation     DateTime        @default(now()) @map("date_creation")

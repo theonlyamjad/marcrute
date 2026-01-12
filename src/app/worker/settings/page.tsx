@@ -1,4 +1,3 @@
-// src/app/worker/settings/page.tsx
 import { SettingsPageClient } from "./settings-client";
 import { getWorkerProfile, getRegionsWithCities } from "@/actions/worker/profile";
 
@@ -45,7 +44,8 @@ export default async function WorkerSettingsPage() {
   return (
     <SettingsPageClient
       initialProfile={{
-        nomComplet: worker.utilisateur.nomComplet || "",
+        prenom: worker.utilisateur.prenom || "",
+        nom: worker.utilisateur.nom || "",
         email: worker.utilisateur.email,
         telephone: worker.utilisateur.telephone || "",
         idVille: worker.idVille || "",
