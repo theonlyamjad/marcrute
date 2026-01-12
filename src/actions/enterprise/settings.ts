@@ -35,9 +35,24 @@ const updateInstitutionSchema = z.object({
   url: z.string().max(500).optional().nullable(), // Changed from URL validation to allow Google Maps links
   telephoneInstitution: z
     .string()
-    .regex(/^(\+212|0)[5-7]\d{8}$/, "Numéro de téléphone invalide (format: +212XXXXXXXXX ou 0XXXXXXXXX)")
     .optional()
-    .nullable(),
+    .nullable()
+    .refine(
+      (val) => {
+        // Allow null, undefined, or empty string
+        if (!val || val.trim() === "") return true;
+        // Remove spaces and validate format
+        const cleaned = val.replace(/\s/g, '');
+        return /^(\+212|0)[5-7]\d{8}$/.test(cleaned);
+      },
+      {
+        message: "Numéro de téléphone invalide (format: +212XXXXXXXXX ou 0XXXXXXXXX)"
+      }
+    )
+    .transform((val) => {
+      if (!val || val.trim() === "") return null;
+      return val.replace(/\s/g, '').trim();
+    }),
   siteWeb: z
     .string()
     .refine(
@@ -57,12 +72,24 @@ const updateUserSchema = z.object({
     .optional(),
   telephone: z
     .string()
-    .regex(
-      /^(\+212|0)[5-7]\d{8}$/,
-      "Numéro de téléphone invalide (format: +212XXXXXXXXX ou 0XXXXXXXXX)"
-    )
     .optional()
-    .nullable(),
+    .nullable()
+    .refine(
+      (val) => {
+        // Allow null, undefined, or empty string
+        if (!val || val.trim() === "") return true;
+        // Remove spaces and validate format
+        const cleaned = val.replace(/\s/g, '');
+        return /^(\+212|0)[5-7]\d{8}$/.test(cleaned);
+      },
+      {
+        message: "Numéro de téléphone invalide (format: +212XXXXXXXXX ou 0XXXXXXXXX)"
+      }
+    )
+    .transform((val) => {
+      if (!val || val.trim() === "") return null;
+      return val.replace(/\s/g, '').trim();
+    }),
 });
 
 const updatePasswordSchema = z
@@ -422,6 +449,68 @@ export async function getRegionsWithCities() {
     return {
       success: false,
       error: "Erreur lors de la récupération des régions. Veuillez réessayer.",
+    };
+  }
+}
+
+// ========================================
+// CHECK PROFILE COMPLETENESS
+// ========================================
+
+/**
+ * Check if institution profile is complete
+ * Required fields: nomInstitution, adresse, telephoneInstitution, idVille
+ */
+export async function isInstitutionProfileComplete() {
+  try {
+    const user = await requireRole("Institution");
+    
+    const institution = await prisma.institution.findUnique({
+      where: { idUtilisateur: user.id },
+      include: {
+        utilisateur: {
+          select: {
+            nomComplet: true,
+            telephone: true,
+          },
+        },
+      },
+    });
+
+    if (!institution) {
+      return { success: true, data: { isComplete: false, missingFields: [] } };
+    }
+
+    const missingFields: string[] = [];
+
+    // Check required fields
+    if (!institution.nomInstitution || institution.nomInstitution.trim() === "" || institution.nomInstitution === "Institution") {
+      missingFields.push("nomInstitution");
+    }
+    if (!institution.adresse || institution.adresse.trim() === "") {
+      missingFields.push("adresse");
+    }
+    if (!institution.telephoneInstitution || institution.telephoneInstitution.trim() === "") {
+      missingFields.push("telephoneInstitution");
+    }
+    if (!institution.idVille) {
+      missingFields.push("idVille");
+    }
+
+    const isComplete = missingFields.length === 0;
+
+    return { 
+      success: true, 
+      data: { 
+        isComplete, 
+        missingFields 
+      } 
+    };
+  } catch (error) {
+    console.error("Error checking institution profile completeness:", error);
+    return {
+      success: false,
+      error: "Erreur lors de la vérification du profil",
     };
   }
 }
