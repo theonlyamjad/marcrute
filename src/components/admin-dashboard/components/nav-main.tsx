@@ -25,8 +25,8 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      <SidebarGroupContent>
-        <SidebarGroupLabel>Administration</SidebarGroupLabel>
+      <SidebarGroupContent> 
+        <SidebarGroupLabel></SidebarGroupLabel>
         <SidebarMenu>
           {items.map((item) => {
             const isActiveItem = pathname === item.url;

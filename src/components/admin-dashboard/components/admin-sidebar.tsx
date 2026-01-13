@@ -93,7 +93,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
               window.location.href = "/admin/sign-in";
             }}
             variant="outline"
-            className="w-full justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/20"
+            className="bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-200 transition-all cursor-pointer w-full disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
             <LogOut className="h-4 w-4" />
             Déconnexion

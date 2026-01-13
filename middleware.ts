@@ -1,6 +1,46 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+
+// Check if user is banned
+async function checkUserBanStatus(userId: string) {
+  try {
+    const activeBan = await prisma.ban.findFirst({
+      where: {
+        idUtilisateur: userId,
+        estActif: true,
+        OR: [
+          { dateExpiration: null }, // Permanent ban
+          { dateExpiration: { gte: new Date() } }, // Not expired yet
+        ],
+      },
+    });
+
+    if (!activeBan) {
+      return { isBanned: false };
+    }
+
+    // Check if ban has expired
+    if (activeBan.dateExpiration && activeBan.dateExpiration < new Date()) {
+      // Auto-deactivate expired ban
+      await prisma.ban.update({
+        where: { idBan: activeBan.idBan },
+        data: {
+          estActif: false,
+          dateDesactivation: new Date(),
+        },
+      });
+
+      return { isBanned: false };
+    }
+
+    return { isBanned: true };
+  } catch (error) {
+    console.error("Error checking ban status in middleware:", error);
+    return { isBanned: false }; // Don't block on error
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -72,6 +112,27 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/worker/sign-in", request.url));
     }
     return NextResponse.redirect(new URL("/worker/sign-in", request.url));
+  }
+
+  // ========================================
+  // BAN CHECK - Check if user is banned
+  // ========================================
+  const banStatus = await checkUserBanStatus(session.user.id);
+  
+  if (banStatus.isBanned) {
+    // Redirect to appropriate sign-in page based on role
+    const userRole = session.user.role;
+    
+    if (userRole === "Admin") {
+      // Don't ban admins (optional - remove this if you want to ban admins too)
+      return NextResponse.next();
+    } else if (userRole === "Institution") {
+      return NextResponse.redirect(new URL("/enterprise/sign-in?banned=true", request.url));
+    } else if (userRole === "Travailleur") {
+      return NextResponse.redirect(new URL("/worker/sign-in?banned=true", request.url));
+    }
+    
+    return NextResponse.redirect(new URL("/worker/sign-in?banned=true", request.url));
   }
 
   const userRole = session.user.role;

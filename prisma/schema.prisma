@@ -27,8 +27,10 @@ model Utilisateur {
   accounts       Account[]
   sessions       Session[]
   administrateur Administrateur?
+  superAdmin     SuperAdmin?
   institution    Institution?
   travailleur    Travailleur?
+  bans           Ban[]
 
   @@map("utilisateurs")
 }
@@ -81,6 +83,18 @@ model VerificationToken {
 // TYPES D'UTILISATEURS
 // ========================================
 
+model SuperAdmin {
+  idSuperAdmin  String      @id @default(cuid()) @map("id_super_admin")
+  idUtilisateur String      @unique @map("id_utilisateur")
+  permissions   String?
+  dateCreation  DateTime    @default(now()) @map("date_creation")
+  
+  utilisateur       Utilisateur      @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  adminsCreated     Administrateur[] @relation("SuperAdminCreator")
+
+  @@map("super_admins")
+}
+
 model Travailleur {
   idTravailleur         String          @id @default(cuid()) @map("id_travailleur")
   idUtilisateur         String          @unique @map("id_utilisateur")
@@ -132,16 +146,42 @@ model Institution {
 }
 
 model Administrateur {
-  idAdministrateur String        @id @default(cuid()) @map("id_administrateur")
-  idUtilisateur    String        @unique @map("id_utilisateur")
+  idAdministrateur String         @id @default(cuid()) @map("id_administrateur")
+  idUtilisateur    String         @unique @map("id_utilisateur")
+  idSuperAdmin     String?        @map("id_super_admin")
   permissions      String?
-  dateCreation     DateTime      @default(now()) @map("date_creation")
+  dateCreation     DateTime       @default(now()) @map("date_creation")
   
   utilisateur  Utilisateur   @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  createdBy    SuperAdmin?   @relation("SuperAdminCreator", fields: [idSuperAdmin], references: [idSuperAdmin])
   signalements Signalement[]
   validations  Validation[]
+  bansIssued   Ban[]
 
   @@map("administrateurs")
+}
+
+// ========================================
+// SYSTÈME DE BAN
+// ========================================
+
+model Ban {
+  idBan            String      @id @default(cuid()) @map("id_ban")
+  idUtilisateur    String      @map("id_utilisateur")
+  idAdministrateur String      @map("id_administrateur")
+  titre            String
+  description      String
+  dureeType        String      @map("duree_type") 
+  dureeValeur      Int?        @map("duree_valeur")
+  dateBan          DateTime    @default(now()) @map("date_ban")
+  dateExpiration   DateTime?   @map("date_expiration")
+  estActif         Boolean     @default(true) @map("est_actif")
+  dateDesactivation DateTime?  @map("date_desactivation")
+  
+  utilisateur    Utilisateur    @relation(fields: [idUtilisateur], references: [idUtilisateur], onDelete: Cascade)
+  administrateur Administrateur @relation(fields: [idAdministrateur], references: [idAdministrateur])
+
+  @@map("bans")
 }
 
 // ========================================
@@ -343,6 +383,7 @@ model Validation {
   idTravailleur    String?        @map("id_travailleur")
   idInstitution    String?        @map("id_institution")
   idMission        String?        @map("id_mission")
+  idDiplome        String?        @map("id_diplome")
   typeValidation   String         @map("type_validation")
   statut           String
   notes            String?

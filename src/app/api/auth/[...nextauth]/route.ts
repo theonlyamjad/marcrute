@@ -4,6 +4,45 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+// Helper function to check ban status
+async function checkBanStatus(userId: string) {
+  try {
+    const activeBan = await prisma.ban.findFirst({
+      where: {
+        idUtilisateur: userId,
+        estActif: true,
+        OR: [
+          { dateExpiration: null }, // Permanent ban
+          { dateExpiration: { gte: new Date() } }, // Not expired yet
+        ],
+      },
+    });
+
+    if (!activeBan) {
+      return { isBanned: false };
+    }
+
+    // Check if ban has expired
+    if (activeBan.dateExpiration && activeBan.dateExpiration < new Date()) {
+      // Auto-deactivate expired ban
+      await prisma.ban.update({
+        where: { idBan: activeBan.idBan },
+        data: {
+          estActif: false,
+          dateDesactivation: new Date(),
+        },
+      });
+
+      return { isBanned: false };
+    }
+
+    return { isBanned: true };
+  } catch (error) {
+    console.error("Error checking ban status:", error);
+    return { isBanned: false };
+  }
+}
+
 export const authOptions: NextAuthConfig = {
   providers: [
     GoogleProvider({
@@ -129,6 +168,14 @@ async signIn({ user, account, profile }) {
       if (token.sub && session.user) {
         session.user.id = token.sub;
         
+        // CHECK BAN STATUS ON EVERY SESSION CHECK
+        const banStatus = await checkBanStatus(token.sub);
+        
+        if (banStatus.isBanned) {
+          // Return null to invalidate session (forces logout)
+          return null as any;
+        }
+        
         const user = await prisma.utilisateur.findUnique({
           where: { idUtilisateur: token.sub },
           select: { 
@@ -191,6 +238,13 @@ async signIn({ user, account, profile }) {
   session: {
     strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  
+  events: {
+    async signOut() {
+      // Optional: Log signout events
+      console.log("User signed out");
+    },
   },
   
   secret: process.env.NEXTAUTH_SECRET,

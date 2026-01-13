@@ -13,6 +13,7 @@ const createValidationSchema = z.object({
   idTravailleur: z.string().optional(),
   idInstitution: z.string().optional(),
   idMission: z.string().optional(),
+  idDiplome: z.string().optional(),
   typeValidation: z.string(),
   statut: z.enum(["En attente", "Approuvée", "Rejetée"]),
   notes: z.string().optional(),
@@ -21,6 +22,12 @@ const createValidationSchema = z.object({
 const updateValidationSchema = z.object({
   idValidation: z.string(),
   statut: z.enum(["En attente", "Approuvée", "Rejetée"]),
+  notes: z.string().optional(),
+});
+
+const verifyDiplomaSchema = z.object({
+  idDiplome: z.string(),
+  statut: z.enum(["Vérifié", "Rejeté"]),
   notes: z.string().optional(),
 });
 
@@ -73,6 +80,7 @@ export async function getAllValidations(filters?: {
                   email: true,
                 },
               },
+              diplomes: true,
             },
           },
           institution: {
@@ -102,6 +110,9 @@ export async function getAllValidations(filters?: {
       concerne: v.travailleur?.utilisateur.nomComplet || 
                 v.institution?.nomInstitution || 
                 v.mission?.titre || "Inconnu",
+      idTravailleur: v.idTravailleur,
+      idDiplome: v.idDiplome,
+      diplomes: v.travailleur?.diplomes || [],
       administrateur: v.administrateur.utilisateur.nomComplet || "Admin",
       date: v.dateCreation.toISOString().split("T")[0],
       notes: v.notes,
@@ -153,6 +164,7 @@ export async function getValidationById(idValidation: string) {
                 categorie: true,
               },
             },
+            diplomes: true,
           },
         },
         institution: true,
@@ -214,6 +226,7 @@ export async function createValidation(
         idTravailleur: validated.idTravailleur,
         idInstitution: validated.idInstitution,
         idMission: validated.idMission,
+        idDiplome: validated.idDiplome,
         typeValidation: validated.typeValidation,
         statut: validated.statut,
         notes: validated.notes,
@@ -269,6 +282,152 @@ export async function updateValidation(
 }
 
 // ========================================
+// VERIFY DIPLOMA
+// ========================================
+
+export async function verifyDiploma(
+  input: z.infer<typeof verifyDiplomaSchema>
+) {
+  try {
+    const user = await requireRole("Admin");
+
+    const validated = verifyDiplomaSchema.parse(input);
+
+    // Get the diploma
+    const diplome = await prisma.diplome.findUnique({
+      where: { idDiplome: validated.idDiplome },
+      include: {
+        travailleur: {
+          include: {
+            utilisateur: true,
+          },
+        },
+      },
+    });
+
+    if (!diplome) {
+      return {
+        success: false,
+        error: "Diplôme introuvable",
+      };
+    }
+
+    // Update diploma status
+    await prisma.diplome.update({
+      where: { idDiplome: validated.idDiplome },
+      data: {
+        statut: validated.statut,
+        dateVerification: new Date(),
+      },
+    });
+
+    // Get admin ID
+    const admin = await prisma.administrateur.findUnique({
+      where: { idUtilisateur: user.id },
+      select: { idAdministrateur: true },
+    });
+
+    if (admin) {
+      // Create or update validation record
+      const existingValidation = await prisma.validation.findFirst({
+        where: {
+          idDiplome: validated.idDiplome,
+          typeValidation: "Diplôme",
+        },
+      });
+
+      if (existingValidation) {
+        await prisma.validation.update({
+          where: { idValidation: existingValidation.idValidation },
+          data: {
+            statut: validated.statut === "Vérifié" ? "Approuvée" : "Rejetée",
+            notes: validated.notes,
+          },
+        });
+      } else {
+        await prisma.validation.create({
+          data: {
+            idAdministrateur: admin.idAdministrateur,
+            idTravailleur: diplome.idTravailleur,
+            idDiplome: validated.idDiplome,
+            typeValidation: "Diplôme",
+            statut: validated.statut === "Vérifié" ? "Approuvée" : "Rejetée",
+            notes: validated.notes,
+          },
+        });
+      }
+    }
+
+    revalidatePath("/admin/validations");
+    return { success: true };
+  } catch (error) {
+    console.error("Error verifying diploma:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la vérification du diplôme",
+    };
+  }
+}
+
+// ========================================
+// GET PENDING DIPLOMAS
+// ========================================
+
+export async function getPendingDiplomas() {
+  try {
+    await requireRole("Admin");
+
+    const diplomas = await prisma.diplome.findMany({
+      where: {
+        statut: null,
+      },
+      include: {
+        travailleur: {
+          include: {
+            utilisateur: {
+              select: {
+                nomComplet: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        dateCreation: "desc",
+      },
+    });
+
+    const formatted = diplomas.map((d) => ({
+      id: d.idDiplome,
+      nomDiplome: d.nomDiplome,
+      nomInstitution: d.nomInstitution,
+      cheminFichier: d.cheminFichier,
+      travailleur: d.travailleur.utilisateur.nomComplet || "Inconnu",
+      email: d.travailleur.utilisateur.email,
+      dateCreation: d.dateCreation.toISOString().split("T")[0],
+    }));
+
+    return {
+      success: true,
+      data: formatted,
+    };
+  } catch (error) {
+    console.error("Error fetching pending diplomas:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la récupération des diplômes",
+    };
+  }
+}
+
+// ========================================
 // DELETE VALIDATION
 // ========================================
 
@@ -293,4 +452,3 @@ export async function deleteValidation(idValidation: string) {
     };
   }
 }
-

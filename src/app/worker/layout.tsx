@@ -2,6 +2,7 @@ import { WorkerNavbar } from "@/components/ui/worker/Workernavbar";
 import { requireRole } from "@/lib/auth";
 import { checkOnboardingCompletion } from "@/actions/worker/onboarding";
 import { redirect } from "next/navigation";
+import { WorkerLayoutClient } from "./layout-client";
 
 function getInitials(name: string | null): string {
   if (!name) return "U";
@@ -40,9 +41,11 @@ export default async function WorkerLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F4]">
-      <WorkerNavbar user={userData} />
-      <main>{children}</main>
-    </div>
+    <WorkerLayoutClient>
+      <div className="min-h-screen bg-[#F3F4F4]">
+        <WorkerNavbar user={userData} />
+        <main>{children}</main>
+      </div>
+    </WorkerLayoutClient>
   );
 }

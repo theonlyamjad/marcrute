@@ -135,7 +135,7 @@ const SignInAdminPage = () => {
         </div>
 
         {/* IMAGE/ILLUSTRATION */}
-        <div className="hidden lg:flex items-center justify-center bg-gradient-to-br from-[#1D546D] to-[#5F9598] p-8">
+        <div className="hidden lg:flex items-center justify-center bg-linear-to-br from-[#1D546D] to-[#5F9598] p-8">
           <div className="flex flex-col items-center justify-center">
             <Image
               src={img_sign_in_admin}

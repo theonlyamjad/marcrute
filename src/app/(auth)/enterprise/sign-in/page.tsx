@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import InputForm from "@/components/Form/inputForm";
 import { Button } from "@/components/ui/button";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import img_sign_in_entreprise from "../../../../../public/assets/images/enterprise/Profiling-bro.png";
+import { checkUserLoginStatus } from "@/actions/admin/check-ban-action";
+import { formatBanMessage } from "@/lib/format-ban-message";
+import { toast } from "sonner";
 
 const SignInEntreprisePage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -22,6 +26,21 @@ const SignInEntreprisePage = () => {
     email: "",
     password: "",
   });
+
+  // Check if redirected due to ban
+  useEffect(() => {
+    if (searchParams.get('banned') === 'true') {
+      toast.error("🚫 Accès au compte restreint", {
+        description: "Votre compte a été suspendu. Veuillez vous reconnecter pour voir les détails.",
+        duration: 10000,
+        className: "border-2 border-red-500",
+        style: {
+          background: '#FEE2E2',
+          color: '#991B1B',
+        },
+      });
+    }
+  }, [searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -38,6 +57,36 @@ const SignInEntreprisePage = () => {
     setErrors({ email: "", password: "" });
 
     try {
+      // CHECK BAN STATUS FIRST
+      const loginStatus = await checkUserLoginStatus(formData.email);
+      
+      if (loginStatus.isBanned && loginStatus.banInfo) {
+        const banMessage = formatBanMessage(loginStatus.banInfo);
+        
+        // Simple clean format
+        const fullMessage = `${banMessage.reasonTitle}
+
+        ${banMessage.reasonDetail}
+
+        Appliqué le: ${banMessage.metadata.appliedOn}
+        ${banMessage.metadata.status}
+
+        ${banMessage.footer}`;
+
+        toast.error(banMessage.header, {
+          description: fullMessage,
+          duration: 15000,
+          className: "border-2 border-red-500",
+          style: {
+            background: '#FEE2E2',
+            color: '#991B1B',
+          },
+        });
+        setIsLoading(false);
+        return; // Stop login process
+      }
+
+      // Continue with normal authentication
       const res = await signIn("credentials", {
         email: formData.email,
         password: formData.password,

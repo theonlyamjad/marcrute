@@ -8,8 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Search, UserPlus, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Search, Trash2, Ban as BanIcon, ShieldAlert } from 'lucide-react';
 import { getAllUsers, deleteUser } from '@/actions/admin/utilisateurs';
+import { createBan, checkUserBanStatus } from '@/actions/admin/bans';
 import { toast } from 'sonner';
 
 export default function AdminUtilisateurs() {
@@ -19,6 +23,17 @@ export default function AdminUtilisateurs() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
+  
+  // Ban dialog state
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [banData, setBanData] = useState({
+    titre: "",
+    description: "",
+    dureeType: "days" as "hours" | "days" | "months" | "years" | "permanent",
+    dureeValeur: 1,
+  });
+  const [banning, setBanning] = useState(false);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -31,7 +46,18 @@ export default function AdminUtilisateurs() {
       });
 
       if (result.success && result.data) {
-        setUsers(result.data);
+        // Check ban status for each user
+        const usersWithBanStatus = await Promise.all(
+          result.data.map(async (user: any) => {
+            const banStatus = await checkUserBanStatus(user.id);
+            return {
+              ...user,
+              isBanned: banStatus.isBanned || false,
+              banInfo: banStatus.data || null,
+            };
+          })
+        );
+        setUsers(usersWithBanStatus);
         setPagination(result.pagination);
       } else {
         toast.error(result.error || "Erreur lors du chargement");
@@ -67,13 +93,78 @@ export default function AdminUtilisateurs() {
     }
   };
 
+  const handleOpenBanDialog = (user: any) => {
+    setSelectedUser(user);
+    setBanData({
+      titre: "",
+      description: "",
+      dureeType: "days",
+      dureeValeur: 1,
+    });
+    setBanDialogOpen(true);
+  };
+
+  const handleBanUser = async () => {
+    if (!selectedUser) return;
+
+    if (!banData.titre.trim()) {
+      toast.error("Le titre est requis");
+      return;
+    }
+
+    if (!banData.description.trim()) {
+      toast.error("La description est requise");
+      return;
+    }
+
+    if (banData.dureeType !== "permanent" && (!banData.dureeValeur || banData.dureeValeur <= 0)) {
+      toast.error("La durée doit être supérieure à 0");
+      return;
+    }
+
+    setBanning(true);
+    try {
+      const result = await createBan({
+        idUtilisateur: selectedUser.id,
+        titre: banData.titre,
+        description: banData.description,
+        dureeType: banData.dureeType,
+        dureeValeur: banData.dureeType === "permanent" ? undefined : banData.dureeValeur,
+      });
+
+      if (result.success) {
+        toast.success("Utilisateur banni avec succès");
+        setBanDialogOpen(false);
+        loadUsers();
+      } else {
+        toast.error(result.error || "Erreur lors du bannissement");
+      }
+    } catch (error) {
+      toast.error("Erreur lors du bannissement");
+      console.error(error);
+    } finally {
+      setBanning(false);
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const variants: Record<string, string> = {
       'Travailleur': 'bg-blue-100 text-blue-800',
       'Institution': 'bg-green-100 text-green-800',
-      'Administrateur': 'bg-purple-100 text-purple-800',
+      'Admin': 'bg-purple-100 text-purple-800',
     };
     return <Badge className={variants[role] || 'bg-gray-100 text-gray-800'}>{role}</Badge>;
+  };
+
+  const getDurationLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      hours: "Heures",
+      days: "Jours",
+      months: "Mois",
+      years: "Années",
+      permanent: "Permanent",
+    };
+    return labels[type] || type;
   };
 
   return (
@@ -139,6 +230,7 @@ export default function AdminUtilisateurs() {
                         <TableHead>Email</TableHead>
                         <TableHead>Rôle</TableHead>
                         <TableHead>Téléphone</TableHead>
+                        <TableHead>Statut</TableHead>
                         <TableHead>Date création</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -151,10 +243,37 @@ export default function AdminUtilisateurs() {
                             <TableCell>{user.email}</TableCell>
                             <TableCell>{getRoleBadge(user.role)}</TableCell>
                             <TableCell>{user.telephone || "N/A"}</TableCell>
+                            <TableCell>
+                              {user.isBanned ? (
+                                <Badge className="bg-red-100 text-red-800 border-red-200">
+                                  <ShieldAlert className="h-3 w-3 mr-1" />
+                                  Banni
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-green-100 text-green-800 border-green-200">
+                                  Actif
+                                </Badge>
+                              )}
+                            </TableCell>
                             <TableCell>{new Date(user.dateCreation).toLocaleDateString('fr-FR')}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleDelete(user.id)}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenBanDialog(user)}
+                                  disabled={user.isBanned || user.role === 'Admin'}
+                                  title={user.isBanned ? "Utilisateur déjà banni" : user.role === 'Admin' ? "Impossible de bannir un admin" : "Bannir l'utilisateur"}
+                                >
+                                  <BanIcon className="h-4 w-4 text-orange-600" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleDelete(user.id)}
+                                  disabled={user.role === 'Admin'}
+                                  title={user.role === 'Admin' ? "Impossible de supprimer un admin" : "Supprimer l'utilisateur"}
+                                >
                                   <Trash2 className="h-4 w-4 text-red-600" />
                                 </Button>
                               </div>
@@ -163,7 +282,7 @@ export default function AdminUtilisateurs() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-[#5F9598]">
+                          <TableCell colSpan={7} className="text-center py-8 text-[#5F9598]">
                             Aucun utilisateur trouvé
                           </TableCell>
                         </TableRow>
@@ -202,7 +321,111 @@ export default function AdminUtilisateurs() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ban Dialog */}
+      <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <DialogContent className="sm:max-w-125">
+          <DialogHeader>
+            <DialogTitle>Bannir l'utilisateur</DialogTitle>
+            <DialogDescription>
+              Bannir {selectedUser?.nomComplet || selectedUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="ban-titre">Titre du ban *</Label>
+              <Input
+                id="ban-titre"
+                value={banData.titre}
+                onChange={(e) => setBanData({ ...banData, titre: e.target.value })}
+                placeholder="Ex: Violation des conditions d'utilisation"
+                maxLength={200}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ban-description">Description / Raison *</Label>
+              <Textarea
+                id="ban-description"
+                value={banData.description}
+                onChange={(e) => setBanData({ ...banData, description: e.target.value })}
+                placeholder="Expliquez la raison du bannissement..."
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ban-duree-type">Type de durée *</Label>
+              <Select
+                value={banData.dureeType}
+                onValueChange={(value: any) => setBanData({ ...banData, dureeType: value })}
+              >
+                <SelectTrigger id="ban-duree-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hours">Heures</SelectItem>
+                  <SelectItem value="days">Jours</SelectItem>
+                  <SelectItem value="months">Mois</SelectItem>
+                  <SelectItem value="years">Années</SelectItem>
+                  <SelectItem value="permanent">Permanent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {banData.dureeType !== "permanent" && (
+              <div className="space-y-2">
+                <Label htmlFor="ban-duree-valeur">
+                  Durée ({getDurationLabel(banData.dureeType)}) *
+                </Label>
+                <Input
+                  id="ban-duree-valeur"
+                  type="number"
+                  min="1"
+                  value={banData.dureeValeur}
+                  onChange={(e) => setBanData({ ...banData, dureeValeur: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+            )}
+
+            {banData.dureeType === "permanent" && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800 font-medium">
+                  ⚠️ Attention: Ce bannissement sera permanent et ne pourra être levé que manuellement par un administrateur.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBanDialogOpen(false)}
+              disabled={banning}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleBanUser}
+              disabled={banning}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {banning ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Bannissement...
+                </>
+              ) : (
+                <>
+                  <BanIcon className="h-4 w-4 mr-2" />
+                  Bannir
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarInset>
   );
 }
-
