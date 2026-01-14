@@ -2,116 +2,151 @@
 
 import React, { useState, useEffect } from 'react';
 import { SidebarInset } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Eye, CheckCircle, XCircle, FileText, Download, FileCheck2 } from 'lucide-react';
-import { getAllValidations, updateValidation, verifyDiploma } from '@/actions/admin/validations';
+import { Loader2, Search, CheckCircle, XCircle, Eye, Filter } from 'lucide-react';
+import { getAllDiplomesForValidation, getFilterOptions, getCitiesByRegion, verifyDiploma } from '@/actions/admin/validations';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function AdminValidations() {
   const [loading, setLoading] = useState(true);
-  const [validations, setValidations] = useState<any[]>([]);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [diplomes, setDiplomes] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [statutFilter, setStatutFilter] = useState<string>("all");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
-  const [selectedValidation, setSelectedValidation] = useState<any>(null);
-  const [notes, setNotes] = useState("");
   
-  // Diploma verification state
-  const [diplomaDialogOpen, setDiplomaDialogOpen] = useState(false);
-  const [selectedDiplomas, setSelectedDiplomas] = useState<any[]>([]);
-  const [currentDiplomaIndex, setCurrentDiplomaIndex] = useState(0);
-  const [diplomaNotes, setDiplomaNotes] = useState("");
+  // Filter options
+  const [regions, setRegions] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+  const [specialtyCategories, setSpecialtyCategories] = useState<any[]>([]);
+  
+  // Diploma verification
+  const [selectedDiploma, setSelectedDiploma] = useState<any>(null);
+  const [notes, setNotes] = useState("");
   const [verifying, setVerifying] = useState(false);
+  
+  // PDF viewer dialog
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState("");
 
-  const loadValidations = async () => {
+  const hasActiveFilters = searchTerm !== "" || statutFilter !== "all" || selectedRegion !== "all" || selectedCity !== "all" || selectedSpecialty !== "all";
+
+  const filteredCities = selectedRegion === "all" ? [] : cities.filter((city: any) => city.idRegion === selectedRegion);
+
+  // Load filter options on mount
+  useEffect(() => {
+    loadFilterOptions();
+  }, []);
+
+  // Load cities when region changes
+  useEffect(() => {
+    if (selectedRegion && selectedRegion !== "all") {
+      loadCities(selectedRegion);
+    } else {
+      setCities([]);
+      setSelectedCity("all");
+    }
+  }, [selectedRegion]);
+
+  // Load diplomas when filters change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadDiplomes();
+    }, searchTerm ? 500 : 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [page, statutFilter, selectedRegion, selectedCity, selectedSpecialty, searchTerm]);
+
+  const loadFilterOptions = async () => {
+    try {
+      const result = await getFilterOptions();
+      if (result.success && result.data) {
+        setRegions(result.data.regions);
+        setSpecialtyCategories(result.data.specialites);
+      }
+    } catch (error) {
+      console.error("Error loading filter options:", error);
+    }
+  };
+
+  const loadCities = async (regionId: string) => {
+    try {
+      const result = await getCitiesByRegion(regionId);
+      if (result.success && result.data) {
+        setCities(result.data);
+      }
+    } catch (error) {
+      console.error("Error loading cities:", error);
+    }
+  };
+
+  const loadDiplomes = async () => {
     setLoading(true);
     try {
-      const result = await getAllValidations({
-        type: typeFilter !== "all" ? typeFilter : undefined,
+      const result = await getAllDiplomesForValidation({
         statut: statutFilter !== "all" ? statutFilter : undefined,
+        regionId: selectedRegion !== "all" ? selectedRegion : undefined,
+        villeId: selectedCity !== "all" ? selectedCity : undefined,
+        specialiteId: selectedSpecialty !== "all" ? selectedSpecialty : undefined,
+        search: searchTerm || undefined,
         page,
         limit: 20,
       });
 
       if (result.success && result.data) {
-        setValidations(result.data);
+        setDiplomes(result.data);
         setPagination(result.pagination);
       } else {
         toast.error(result.error || "Erreur lors du chargement");
       }
     } catch (error) {
-      toast.error("Erreur lors du chargement des validations");
+      toast.error("Erreur lors du chargement des diplômes");
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadValidations();
-  }, [page, typeFilter, statutFilter]);
-
-  const handleUpdateStatus = async (id: string, statut: string) => {
-    const result = await updateValidation({
-      idValidation: id,
-      statut: statut as "En attente" | "Approuvée" | "Rejetée",
-      notes: notes || undefined,
-    });
-
-    if (result.success) {
-      toast.success("Validation mise à jour");
-      setNotes("");
-      setSelectedValidation(null);
-      loadValidations();
-    } else {
-      toast.error(result.error || "Erreur lors de la mise à jour");
-    }
+  const handleSearch = () => {
+    setPage(1);
+    loadDiplomes();
   };
 
-  const handleOpenDiplomaDialog = (validation: any) => {
-    if (validation.diplomes && validation.diplomes.length > 0) {
-      setSelectedDiplomas(validation.diplomes);
-      setCurrentDiplomaIndex(0);
-      setDiplomaNotes("");
-      setDiplomaDialogOpen(true);
-    } else {
-      toast.error("Aucun diplôme trouvé pour ce travailleur");
-    }
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatutFilter("all");
+    setSelectedRegion("all");
+    setSelectedCity("all");
+    setSelectedSpecialty("all");
+    setPage(1);
   };
 
   const handleVerifyDiploma = async (statut: "Vérifié" | "Rejeté") => {
-    if (!selectedDiplomas[currentDiplomaIndex]) return;
+    if (!selectedDiploma) return;
 
     setVerifying(true);
     try {
       const result = await verifyDiploma({
-        idDiplome: selectedDiplomas[currentDiplomaIndex].idDiplome,
+        idDiplome: selectedDiploma.idDiplome,
         statut,
-        notes: diplomaNotes || undefined,
+        notes: notes || undefined,
       });
 
       if (result.success) {
         toast.success(`Diplôme ${statut.toLowerCase()} avec succès`);
-        
-        // Move to next diploma or close dialog
-        if (currentDiplomaIndex < selectedDiplomas.length - 1) {
-          setCurrentDiplomaIndex(currentDiplomaIndex + 1);
-          setDiplomaNotes("");
-        } else {
-          setDiplomaDialogOpen(false);
-          setSelectedDiplomas([]);
-          setCurrentDiplomaIndex(0);
-          loadValidations();
-        }
+        setPdfDialogOpen(false);
+        setSelectedDiploma(null);
+        setNotes("");
+        loadDiplomes();
       } else {
         toast.error(result.error || "Erreur lors de la vérification");
       }
@@ -123,14 +158,17 @@ export default function AdminValidations() {
     }
   };
 
-  const currentDiploma = selectedDiplomas[currentDiplomaIndex];
+  const handleViewPDF = (diplome: any) => {
+    setSelectedDiploma(diplome);
+    setPdfUrl(diplome.cheminFichier);
+    setPdfDialogOpen(true);
+  };
 
   const getStatusBadge = (statut: string) => {
     const variants: Record<string, string> = {
       'En attente': 'bg-amber-100 text-amber-800',
-      'Approuvée': 'bg-green-100 text-green-800',
-      'Rejetée': 'bg-red-100 text-red-800',
       'Vérifié': 'bg-green-100 text-green-800',
+      'Rejeté': 'bg-red-100 text-red-800',
     };
     return <Badge className={variants[statut] || 'bg-gray-100 text-gray-800'}>{statut}</Badge>;
   };
@@ -139,48 +177,156 @@ export default function AdminValidations() {
     <SidebarInset>
       <div className="flex flex-1 flex-col p-6 md:p-8 space-y-6 bg-[#F3F4F4]">
         <div className="bg-[#1D546D] rounded-xl p-6 shadow-lg">
-          <h1 className="text-3xl font-bold text-white mb-2">Gestion des validations</h1>
-          <p className="text-[#F3F4F4] text-opacity-90">Valider ou rejeter les demandes et vérifier les diplômes</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Vérification des diplômes</h1>
+          <p className="text-[#F3F4F4] text-opacity-90">Valider les diplômes des travailleurs</p>
         </div>
 
-        <Card className="border-none shadow-lg bg-white">
+        {/* Filters Card */}
+        <Card className="border-[#1D546D]/20 shadow-lg">
           <CardHeader>
-            <CardTitle>Filtres</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg text-[#061E29] flex items-center gap-2">
+                <Filter className="h-5 w-5 text-[#5F9598]" />
+                Filtres
+              </CardTitle>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="text-[#5F9598] hover:text-[#1D546D]"
+                >
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Tous les types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les types</SelectItem>
-                  <SelectItem value="Diplôme">Diplôme</SelectItem>
-                  <SelectItem value="Profil">Profil</SelectItem>
-                  <SelectItem value="Mission">Mission</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statutFilter} onValueChange={setStatutFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Tous les statuts" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Rechercher un travailleur..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="pl-10"
+                />
+              </div>
+
+              {/* Status */}
+              <Select
+                value={statutFilter}
+                onValueChange={(value) => {
+                  setStatutFilter(value);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Statut" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
                   <SelectItem value="En attente">En attente</SelectItem>
-                  <SelectItem value="Approuvée">Approuvée</SelectItem>
-                  <SelectItem value="Rejetée">Rejetée</SelectItem>
+                  <SelectItem value="Vérifié">Vérifié</SelectItem>
+                  <SelectItem value="Rejeté">Rejeté</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Region */}
+              <Select
+                value={selectedRegion}
+                onValueChange={(value) => {
+                  setSelectedRegion(value);
+                  setSelectedCity("all");
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Région" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les régions</SelectItem>
+                  {regions.map((region) => (
+                    <SelectItem key={region.idRegion} value={region.idRegion}>
+                      {region.nomRegion}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* City */}
+              <Select
+                value={selectedCity}
+                onValueChange={(value) => {
+                  setSelectedCity(value);
+                  setPage(1);
+                }}
+                disabled={selectedRegion === "all"}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Ville" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les villes</SelectItem>
+                  {filteredCities.map((city: any) => (
+                    <SelectItem key={city.idVille} value={city.idVille}>
+                      {city.nomVille}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Specialty */}
+              <Select
+                value={selectedSpecialty}
+                onValueChange={(value) => {
+                  setSelectedSpecialty(value);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Spécialité" />
+                </SelectTrigger>
+                <SelectContent className="max-h-75">
+                  <SelectItem value="all">Toutes les spécialités</SelectItem>
+                  {specialtyCategories.map((cat) => (
+                    <React.Fragment key={cat.idCategorieSpecialite}>
+                      <div className="px-2 py-1.5 text-sm font-semibold text-gray-500 bg-gray-50 pointer-events-none">
+                        {cat.nomCategorie}
+                      </div>
+                      {cat.specialites.map((spec: any) => (
+                        <SelectItem 
+                          key={spec.idSpecialite} 
+                          value={spec.idSpecialite}
+                          className="pl-6"
+                        >
+                          {spec.nomSpecialite}
+                        </SelectItem>
+                      ))}
+                    </React.Fragment>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </CardContent>
         </Card>
 
+        {/* Diplomas Table */}
         <Card className="border-none shadow-lg bg-white">
           <CardHeader>
-            <CardTitle>Liste des validations</CardTitle>
-            <CardDescription>
-              {pagination && `Total: ${pagination.total} validation(s)`}
-            </CardDescription>
+            <CardTitle>
+              Liste des diplômes
+              {pagination && (
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  ({pagination.total} diplôme{pagination.total > 1 ? 's' : ''})
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -193,96 +339,79 @@ export default function AdminValidations() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Concerne</TableHead>
+                        <TableHead>Travailleur</TableHead>
+                        <TableHead>Diplôme</TableHead>
+                        <TableHead>Institution</TableHead>
+                        <TableHead>Région / Ville</TableHead>
+                        <TableHead>Spécialités</TableHead>
                         <TableHead>Statut</TableHead>
-                        <TableHead>Administrateur</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {validations.length > 0 ? (
-                        validations.map((validation) => (
-                          <TableRow key={validation.id}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {validation.type === "Diplôme" && <FileCheck2 className="h-4 w-4 text-blue-600" />}
-                                {validation.type}
+                      {diplomes.length > 0 ? (
+                        diplomes.map((diplome) => (
+                          <TableRow key={diplome.idDiplome}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{diplome.travailleur.nom}</p>
+                                <p className="text-xs text-gray-500">{diplome.travailleur.email}</p>
                               </div>
                             </TableCell>
-                            <TableCell>{validation.concerne}</TableCell>
-                            <TableCell>{getStatusBadge(validation.statut)}</TableCell>
-                            <TableCell>{validation.administrateur}</TableCell>
-                            <TableCell>{new Date(validation.date).toLocaleDateString('fr-FR')}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                {validation.type === "Diplôme" && validation.idTravailleur && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleOpenDiplomaDialog(validation)}
-                                    title="Vérifier les diplômes"
-                                  >
-                                    <FileCheck2 className="h-4 w-4 text-blue-600" />
-                                  </Button>
-                                )}
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" onClick={() => {
-                                      setSelectedValidation(validation);
-                                      setNotes(validation.notes || "");
-                                    }}>
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Détails de la validation</DialogTitle>
-                                      <DialogDescription>
-                                        Type: {validation.type} | Statut: {validation.statut}
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-4">
-                                      <div>
-                                        <p className="text-sm font-medium">Concerne:</p>
-                                        <p className="text-sm text-gray-600">{validation.concerne}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-medium">Notes:</p>
-                                        <Textarea
-                                          value={notes}
-                                          onChange={(e) => setNotes(e.target.value)}
-                                          placeholder="Ajouter des notes..."
-                                        />
-                                      </div>
-                                      <div className="flex gap-2">
-                                        <Button
-                                          onClick={() => handleUpdateStatus(validation.id, "Approuvée")}
-                                          className="bg-green-600 hover:bg-green-700"
-                                        >
-                                          <CheckCircle className="h-4 w-4 mr-2" />
-                                          Approuver
-                                        </Button>
-                                        <Button
-                                          onClick={() => handleUpdateStatus(validation.id, "Rejetée")}
-                                          variant="destructive"
-                                        >
-                                          <XCircle className="h-4 w-4 mr-2" />
-                                          Rejeter
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
+                            <TableCell className="font-medium">{diplome.nomDiplome}</TableCell>
+                            <TableCell>{diplome.nomInstitution || "N/A"}</TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <p>{diplome.travailleur.region}</p>
+                                <p className="text-gray-500">{diplome.travailleur.ville}</p>
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {diplome.travailleur.specialites.slice(0, 2).map((spec: any, idx: number) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {spec.nom}
+                                  </Badge>
+                                ))}
+                                {diplome.travailleur.specialites.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{diplome.travailleur.specialites.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>{getStatusBadge(diplome.statut)}</TableCell>
+                            <TableCell>
+                              {new Date(diplome.dateCreation).toLocaleDateString('fr-FR')}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {diplome.cheminFichier ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleViewPDF(diplome);
+                                  }}
+                                  title="Voir et vérifier le diplôme"
+                                  className="text-[#1D546D] hover:text-[#5F9598]"
+                                >
+                                  <Eye className="h-5 w-5" />
+                                </Button>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-red-600">
+                                  Aucun fichier
+                                </Badge>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-[#5F9598]">
-                            Aucune validation trouvée
+                          <TableCell colSpan={8} className="text-center py-8 text-[#5F9598]">
+                            Aucun diplôme trouvé
                           </TableCell>
                         </TableRow>
                       )}
@@ -290,6 +419,7 @@ export default function AdminValidations() {
                   </Table>
                 </div>
 
+                {/* Pagination */}
                 {pagination && pagination.totalPages > 1 && (
                   <div className="flex items-center justify-between mt-4">
                     <p className="text-sm text-[#5F9598]">
@@ -321,111 +451,50 @@ export default function AdminValidations() {
         </Card>
       </div>
 
-      {/* Diploma Verification Dialog */}
-      <Dialog open={diplomaDialogOpen} onOpenChange={setDiplomaDialogOpen}>
-        <DialogContent className="sm:max-w-150">
+      {/* PDF Viewer Dialog with Verification */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="max-w-none! w-[90vw] h-[55vw] flex flex-col p-6">
           <DialogHeader>
-            <DialogTitle>Vérification des diplômes</DialogTitle>
-            <DialogDescription>
-              Diplôme {currentDiplomaIndex + 1} sur {selectedDiplomas.length}
-            </DialogDescription>
-          </DialogHeader>
-
-          {currentDiploma && (
-            <div className="space-y-4 py-4">
-              <Card className="border-2 border-[#1D546D] border-opacity-20">
-                <CardHeader>
-                  <CardTitle className="text-lg">{currentDiploma.nomDiplome}</CardTitle>
-                  <CardDescription>
-                    {currentDiploma.nomInstitution || "Institution non spécifiée"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Statut actuel:</span>
-                    {currentDiploma.statut ? (
-                      getStatusBadge(currentDiploma.statut)
-                    ) : (
-                      <Badge className="bg-gray-100 text-gray-800">Non vérifié</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Date de création:</span>
-                    <span className="text-sm text-gray-600">
-                      {new Date(currentDiploma.dateCreation).toLocaleDateString('fr-FR')}
-                    </span>
-                  </div>
-                  {currentDiploma.cheminFichier && (
-                    <div className="pt-2">
-                      <a
-                        href={currentDiploma.cheminFichier}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-[#1D546D] hover:text-[#5F9598] font-medium"
-                      >
-                        <FileText className="h-4 w-4" />
-                        Voir le diplôme
-                        <Download className="h-3 w-3" />
-                      </a>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <div className="space-y-2">
-                <Label htmlFor="diploma-notes">Notes de vérification</Label>
-                <Textarea
-                  id="diploma-notes"
-                  value={diplomaNotes}
-                  onChange={(e) => setDiplomaNotes(e.target.value)}
-                  placeholder="Ajouter des notes sur la vérification du diplôme..."
-                  rows={3}
-                />
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Visualisation et vérification du diplôme</DialogTitle>
+                <DialogDescription className="mt-1">
+                  {selectedDiploma?.nomDiplome} - {selectedDiploma?.travailleur.nom}
+                </DialogDescription>
               </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto border-2 rounded-lg bg-gray-100 flex items-center justify-center min-h-0">
+            {pdfUrl && (
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-0 bg-white shadow-2xl rounded"
+                title="PDF Viewer"
+              />
+            )}
+          </div>
 
-              {currentDiploma.statut && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-800">
-                    ℹ️ Ce diplôme a déjà été vérifié. Vous pouvez le vérifier à nouveau si nécessaire.
+          <DialogFooter className="flex justify-between items-center pt-4">
+            <div className="flex-1">
+              {selectedDiploma?.statut !== "En attente" && (
+                <div className="bg-yellow-200 border-2 border-yellow-500 p-3 w-85 rounded-lg font-black">
+                  <p className="text-sm text-yellow-800 ">
+                    Ce diplôme a déjà été {selectedDiploma?.statut.toLowerCase()}
+                    {selectedDiploma?.dateVerification && (
+                      <span className="ml-1 ">
+                        le {new Date(selectedDiploma.dateVerification).toLocaleDateString('fr-FR')}
+                      </span>
+                    )}
                   </p>
                 </div>
               )}
             </div>
-          )}
-
-          <DialogFooter className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              {currentDiplomaIndex > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setCurrentDiplomaIndex(currentDiplomaIndex - 1);
-                    setDiplomaNotes("");
-                  }}
-                  disabled={verifying}
-                >
-                  ← Précédent
-                </Button>
-              )}
-            </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDiplomaDialogOpen(false);
-                  setSelectedDiplomas([]);
-                  setCurrentDiplomaIndex(0);
-                  setDiplomaNotes("");
-                }}
-                disabled={verifying}
-              >
-                Annuler
-              </Button>
               <Button
                 onClick={() => handleVerifyDiploma("Rejeté")}
                 variant="destructive"
-                disabled={verifying}
+                disabled={verifying || selectedDiploma?.statut !== "En attente"}
               >
                 {verifying ? (
                   <>
@@ -442,7 +511,7 @@ export default function AdminValidations() {
               <Button
                 onClick={() => handleVerifyDiploma("Vérifié")}
                 className="bg-green-600 hover:bg-green-700"
-                disabled={verifying}
+                disabled={verifying || selectedDiploma?.statut !== "En attente"}
               >
                 {verifying ? (
                   <>
@@ -452,7 +521,7 @@ export default function AdminValidations() {
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Vérifier    
+                    Approuver
                   </>
                 )}
               </Button>

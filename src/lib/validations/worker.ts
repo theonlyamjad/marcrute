@@ -82,7 +82,7 @@ export type DeleteExperienceInput = z.infer<typeof deleteExperienceSchema>;
 export const addDiplomaSchema = z.object({
   nomDiplome: z.string().min(2, "Le nom du diplôme est requis").max(100),
   nomInstitution: z.string().min(2, "Le nom de l'institution est requis").max(100),
-  cheminFichier: z.string().url("URL du fichier invalide").optional().nullable(),
+  cheminFichier: z.string().min(1).optional().nullable()
 });
 
 export const deleteDiplomaSchema = z.object({

@@ -9,22 +9,6 @@ import { z } from "zod";
 // VALIDATION SCHEMAS
 // ========================================
 
-const createValidationSchema = z.object({
-  idTravailleur: z.string().optional(),
-  idInstitution: z.string().optional(),
-  idMission: z.string().optional(),
-  idDiplome: z.string().optional(),
-  typeValidation: z.string(),
-  statut: z.enum(["En attente", "Approuvée", "Rejetée"]),
-  notes: z.string().optional(),
-});
-
-const updateValidationSchema = z.object({
-  idValidation: z.string(),
-  statut: z.enum(["En attente", "Approuvée", "Rejetée"]),
-  notes: z.string().optional(),
-});
-
 const verifyDiplomaSchema = z.object({
   idDiplome: z.string(),
   statut: z.enum(["Vérifié", "Rejeté"]),
@@ -32,12 +16,15 @@ const verifyDiplomaSchema = z.object({
 });
 
 // ========================================
-// GET ALL VALIDATIONS
+// GET ALL DIPLOMAS FOR VALIDATION
 // ========================================
 
-export async function getAllValidations(filters?: {
-  type?: string;
+export async function getAllDiplomesForValidation(filters?: {
   statut?: string;
+  regionId?: string;
+  villeId?: string;
+  specialiteId?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }) {
@@ -48,30 +35,60 @@ export async function getAllValidations(filters?: {
     const limit = filters?.limit || 20;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
+    const where: any = {};
 
-    if (filters?.type) {
-      where.typeValidation = filters.type;
+    // Filter by diploma status - FIXED to handle both null and "En attente" string
+    if (filters?.statut === "En attente") {
+      where.OR = [
+        { statut: null },
+        { statut: "En attente" }
+      ];
+    } else if (filters?.statut === "Vérifié") {
+      where.statut = "Vérifié";
+    } else if (filters?.statut === "Rejeté") {
+      where.statut = "Rejeté";
     }
 
-    if (filters?.statut) {
-      where.statut = filters.statut;
+    // Filter by worker's ville or specialite
+    const travailleurWhere: any = {};
+
+    if (filters?.villeId) {
+      travailleurWhere.idVille = filters.villeId;
     }
 
-    const [validations, total] = await Promise.all([
-      prisma.validation.findMany({
+    // For region filter, we need to check ville's region
+    if (filters?.regionId && !filters?.villeId) {
+      travailleurWhere.ville = {
+        idRegion: filters.regionId,
+      };
+    }
+
+    if (filters?.specialiteId) {
+      travailleurWhere.specialites = {
+        some: {
+          idSpecialite: filters.specialiteId,
+        },
+      };
+    }
+
+    // Search by worker name
+    if (filters?.search) {
+      travailleurWhere.utilisateur = {
+        nomComplet: {
+          contains: filters.search,
+          mode: "insensitive" as const,
+        },
+      };
+    }
+
+    if (Object.keys(travailleurWhere).length > 0) {
+      where.travailleur = travailleurWhere;
+    }
+
+    const [diplomes, total] = await Promise.all([
+      prisma.diplome.findMany({
         where,
         include: {
-          administrateur: {
-            include: {
-              utilisateur: {
-                select: {
-                  nomComplet: true,
-                  email: true,
-                },
-              },
-            },
-          },
           travailleur: {
             include: {
               utilisateur: {
@@ -80,17 +97,25 @@ export async function getAllValidations(filters?: {
                   email: true,
                 },
               },
-              diplomes: true,
-            },
-          },
-          institution: {
-            select: {
-              nomInstitution: true,
-            },
-          },
-          mission: {
-            select: {
-              titre: true,
+              ville: {
+                include: {
+                  region: {
+                    select: {
+                      nomRegion: true,
+                    },
+                  },
+                },
+              },
+              specialites: {
+                include: {
+                  categorie: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+                take: 3,
+              },
             },
           },
         },
@@ -100,22 +125,27 @@ export async function getAllValidations(filters?: {
         skip,
         take: limit,
       }),
-      prisma.validation.count({ where }),
+      prisma.diplome.count({ where }),
     ]);
 
-    const formatted = validations.map((v) => ({
-      id: v.idValidation,
-      type: v.typeValidation,
-      statut: v.statut,
-      concerne: v.travailleur?.utilisateur.nomComplet || 
-                v.institution?.nomInstitution || 
-                v.mission?.titre || "Inconnu",
-      idTravailleur: v.idTravailleur,
-      idDiplome: v.idDiplome,
-      diplomes: v.travailleur?.diplomes || [],
-      administrateur: v.administrateur.utilisateur.nomComplet || "Admin",
-      date: v.dateCreation.toISOString().split("T")[0],
-      notes: v.notes,
+    const formatted = diplomes.map((d) => ({
+      idDiplome: d.idDiplome,
+      nomDiplome: d.nomDiplome,
+      nomInstitution: d.nomInstitution,
+      cheminFichier: d.cheminFichier,
+      statut: d.statut || "En attente",
+      dateCreation: d.dateCreation,
+      dateVerification: d.dateVerification,
+      travailleur: {
+        nom: d.travailleur.utilisateur.nomComplet || "Inconnu",
+        email: d.travailleur.utilisateur.email,
+        region: d.travailleur.ville?.region?.nomRegion || "Non spécifiée",
+        ville: d.travailleur.ville?.nomVille || "Non spécifiée",
+        specialites: d.travailleur.specialites.map((s) => ({
+          nom: s.nomSpecialite,
+          categorie: s.categorie?.name || "Autre",
+        })),
+      },
     }));
 
     return {
@@ -129,160 +159,113 @@ export async function getAllValidations(filters?: {
       },
     };
   } catch (error) {
-    console.error("Error fetching validations:", error);
+    console.error("Error fetching diplomas:", error);
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
-          : "Erreur lors de la récupération des validations",
+          : "Erreur lors de la récupération des diplômes",
     };
   }
 }
 
 // ========================================
-// GET VALIDATION BY ID
+// GET FILTER OPTIONS (Regions, Cities, Specialties)
 // ========================================
 
-export async function getValidationById(idValidation: string) {
+export async function getFilterOptions() {
   try {
     await requireRole("Admin");
 
-    const validation = await prisma.validation.findUnique({
-      where: { idValidation },
-      include: {
-        administrateur: {
-          include: {
-            utilisateur: true,
-          },
+    const [regions, categories] = await Promise.all([
+      prisma.region.findMany({
+        select: {
+          idRegion: true,
+          nomRegion: true,
         },
-        travailleur: {
-          include: {
-            utilisateur: true,
-            specialites: {
-              include: {
-                categorie: true,
-              },
+        orderBy: {
+          nomRegion: "asc",
+        },
+      }),
+      prisma.categorieSpecialite.findMany({
+        include: {
+          specialitesTravailleur: {
+            select: {
+              idSpecialite: true,
+              nomSpecialite: true,
             },
-            diplomes: true,
+            distinct: ['nomSpecialite'],
+            orderBy: {
+              nomSpecialite: "asc",
+            },
           },
         },
-        institution: true,
-        mission: true,
-      },
-    });
+        orderBy: {
+          name: "asc",
+        },
+      }),
+    ]);
 
-    if (!validation) {
-      return {
-        success: false,
-        error: "Validation introuvable",
-      };
-    }
+    // Format categories with their specialties
+    const formattedCategories = categories.map((cat) => ({
+      idCategorieSpecialite: cat.id,
+      nomCategorie: cat.name,
+      specialites: cat.specialitesTravailleur,
+    }));
 
     return {
       success: true,
-      data: validation,
-    };
-  } catch (error) {
-    console.error("Error fetching validation:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la récupération de la validation",
-    };
-  }
-}
-
-// ========================================
-// CREATE VALIDATION
-// ========================================
-
-export async function createValidation(
-  input: z.infer<typeof createValidationSchema>
-) {
-  try {
-    const user = await requireRole("Admin");
-
-    // Get admin ID
-    const admin = await prisma.administrateur.findUnique({
-      where: { idUtilisateur: user.id },
-      select: { idAdministrateur: true },
-    });
-
-    if (!admin) {
-      return {
-        success: false,
-        error: "Administrateur introuvable",
-      };
-    }
-
-    const validated = createValidationSchema.parse(input);
-
-    await prisma.validation.create({
       data: {
-        idAdministrateur: admin.idAdministrateur,
-        idTravailleur: validated.idTravailleur,
-        idInstitution: validated.idInstitution,
-        idMission: validated.idMission,
-        idDiplome: validated.idDiplome,
-        typeValidation: validated.typeValidation,
-        statut: validated.statut,
-        notes: validated.notes,
+        regions,
+        specialites: formattedCategories,
       },
-    });
-
-    revalidatePath("/admin/validations");
-    return { success: true };
+    };
   } catch (error) {
-    console.error("Error creating validation:", error);
+    console.error("Error fetching filter options:", error);
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la création de la validation",
+      error: "Erreur lors de la récupération des options de filtrage",
     };
   }
 }
 
 // ========================================
-// UPDATE VALIDATION
+// GET CITIES BY REGION
 // ========================================
 
-export async function updateValidation(
-  input: z.infer<typeof updateValidationSchema>
-) {
+export async function getCitiesByRegion(regionId: string) {
   try {
     await requireRole("Admin");
 
-    const validated = updateValidationSchema.parse(input);
-
-    await prisma.validation.update({
-      where: { idValidation: validated.idValidation },
-      data: {
-        statut: validated.statut,
-        notes: validated.notes,
+    const villes = await prisma.ville.findMany({
+      where: {
+        idRegion: regionId,
+      },
+      select: {
+        idVille: true,
+        nomVille: true,
+      },
+      orderBy: {
+        nomVille: "asc",
       },
     });
 
-    revalidatePath("/admin/validations");
-    return { success: true };
+    return {
+      success: true,
+      data: villes,
+    };
   } catch (error) {
-    console.error("Error updating validation:", error);
+    console.error("Error fetching cities:", error);
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la mise à jour de la validation",
+      error: "Erreur lors de la récupération des villes",
     };
   }
 }
 
 // ========================================
-// VERIFY DIPLOMA
+// VERIFY DIPLOMA (WITH RE-VERIFICATION PREVENTION)
 // ========================================
 
 export async function verifyDiploma(
@@ -309,6 +292,14 @@ export async function verifyDiploma(
       return {
         success: false,
         error: "Diplôme introuvable",
+      };
+    }
+
+    // ✅ PREVENT RE-VERIFICATION - Check for both null and "En attente"
+    if (diplome.statut && diplome.statut !== "En attente" && diplome.statut !== null) {
+      return {
+        success: false,
+        error: `Ce diplôme a déjà été ${diplome.statut.toLowerCase()}`,
       };
     }
 
@@ -368,87 +359,6 @@ export async function verifyDiploma(
         error instanceof Error
           ? error.message
           : "Erreur lors de la vérification du diplôme",
-    };
-  }
-}
-
-// ========================================
-// GET PENDING DIPLOMAS
-// ========================================
-
-export async function getPendingDiplomas() {
-  try {
-    await requireRole("Admin");
-
-    const diplomas = await prisma.diplome.findMany({
-      where: {
-        statut: null,
-      },
-      include: {
-        travailleur: {
-          include: {
-            utilisateur: {
-              select: {
-                nomComplet: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        dateCreation: "desc",
-      },
-    });
-
-    const formatted = diplomas.map((d) => ({
-      id: d.idDiplome,
-      nomDiplome: d.nomDiplome,
-      nomInstitution: d.nomInstitution,
-      cheminFichier: d.cheminFichier,
-      travailleur: d.travailleur.utilisateur.nomComplet || "Inconnu",
-      email: d.travailleur.utilisateur.email,
-      dateCreation: d.dateCreation.toISOString().split("T")[0],
-    }));
-
-    return {
-      success: true,
-      data: formatted,
-    };
-  } catch (error) {
-    console.error("Error fetching pending diplomas:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la récupération des diplômes",
-    };
-  }
-}
-
-// ========================================
-// DELETE VALIDATION
-// ========================================
-
-export async function deleteValidation(idValidation: string) {
-  try {
-    await requireRole("Admin");
-
-    await prisma.validation.delete({
-      where: { idValidation },
-    });
-
-    revalidatePath("/admin/validations");
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting validation:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la suppression de la validation",
     };
   }
 }

@@ -3,12 +3,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
-import {
-  addDiplomaSchema,
-  deleteDiplomaSchema,
-  type AddDiplomaInput,
-  type DeleteDiplomaInput,
-} from "@/lib/validations/worker";
+import {addDiplomaSchema,deleteDiplomaSchema,type AddDiplomaInput,type DeleteDiplomaInput,} from "@/lib/validations/worker";
 import { revalidatePath } from "next/cache";
 
 /**

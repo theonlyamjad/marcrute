@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue,} from "@/components/ui/select";
-import {Briefcase,GraduationCap,Star,Plus,Trash2,CheckCircle,AlertCircle,X,} from "lucide-react";
+import {Briefcase,GraduationCap,Star,Plus,Trash2,CheckCircle,AlertCircle,X,Upload,} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {addWorkerExperience,deleteWorkerExperience,} from "@/actions/worker/experience";
@@ -47,10 +47,11 @@ export function CVPageClient({
   const [newDiploma, setNewDiploma] = useState({
     nomDiplome: "",
     nomInstitution: "",
-    fileName: "",
-    fileSize: 0,
+    file: null as File | null,
+    uploadedUrl: "",
   });
   const [isAddingDiploma, setIsAddingDiploma] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Specialties
   const [specialties, setSpecialties] = useState(initialSpecialties);
@@ -102,23 +103,65 @@ export function CVPageClient({
     }
   };
 
+  // File upload handler
+  const handleFileUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload/diploma", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setNewDiploma({ ...newDiploma, uploadedUrl: data.url });
+        toast.success("Fichier téléchargé avec succès!");
+        return data.url;
+      } else {
+        toast.error(data.error || "Erreur lors du téléchargement");
+        return null;
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Erreur lors du téléchargement du fichier");
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Diploma handlers
   const handleAddDiploma = async () => {
     if (!newDiploma.nomDiplome || !newDiploma.nomInstitution) {
-      toast.error("Veuillez remplir tous les champs");
+      toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
     setIsSaving(true);
+
+    // Upload file if selected
+    let fileUrl = newDiploma.uploadedUrl;
+    if (newDiploma.file && !fileUrl) {
+      fileUrl = await handleFileUpload(newDiploma.file);
+      if (!fileUrl) {
+        setIsSaving(false);
+        return;
+      }
+    }
+
     const result = await addWorkerDiploma({
       nomDiplome: newDiploma.nomDiplome,
       nomInstitution: newDiploma.nomInstitution,
-      cheminFichier: null,
+      cheminFichier: fileUrl || null,
     });
 
     if (result.success) {
       setDiplomas([...diplomas, result.data]);
-      setNewDiploma({ nomDiplome: "", nomInstitution: "", fileName: "", fileSize: 0 });
+      setNewDiploma({ nomDiplome: "", nomInstitution: "", file: null, uploadedUrl: "" });
       setIsAddingDiploma(false);
       toast.success("Diplôme ajouté avec succès!");
     } else {
@@ -402,7 +445,7 @@ export function CVPageClient({
                       
                       {/* File Upload */}
                       <div className="space-y-2">
-                        <Label className="text-xs">Fichier (PDF, JPG, PNG)</Label>
+                        <Label className="text-xs">Fichier du diplôme (PDF, JPG, PNG) *</Label>
                         <div className="flex items-center gap-2">
                           <Input
                             type="file"
@@ -410,17 +453,32 @@ export function CVPageClient({
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                setNewDiploma({ 
-                                  ...newDiploma, 
-                                  fileName: file.name,
-                                  fileSize: file.size 
-                                });
+                                // Validate file size
+                                if (file.size > 5 * 1024 * 1024) {
+                                  toast.error("Fichier trop volumineux (max 5MB)");
+                                  return;
+                                }
+                                setNewDiploma({ ...newDiploma, file });
                                 toast.success(`Fichier sélectionné: ${file.name}`);
                               }
                             }}
                             className="text-sm"
+                            disabled={isUploading}
                           />
+                          {isUploading && (
+                            <Upload className="h-4 w-4 animate-spin text-[#5F9598]" />
+                          )}
                         </div>
+                        {newDiploma.file && (
+                          <p className="text-xs text-green-600">
+                            ✓ {newDiploma.file.name} ({(newDiploma.file.size / 1024).toFixed(0)} KB)
+                          </p>
+                        )}
+                        {newDiploma.uploadedUrl && (
+                          <p className="text-xs text-green-600">
+                            ✓ Fichier téléchargé avec succès
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500">
                           Formats acceptés: PDF, JPG, PNG (max 5MB)
                         </p>
@@ -432,7 +490,7 @@ export function CVPageClient({
                           size="sm"
                           onClick={() => {
                             setIsAddingDiploma(false);
-                            setNewDiploma({ nomDiplome: "", nomInstitution: "", fileName: "", fileSize: 0 });
+                            setNewDiploma({ nomDiplome: "", nomInstitution: "", file: null, uploadedUrl: "" });
                           }}
                         >
                           Annuler
@@ -440,10 +498,10 @@ export function CVPageClient({
                         <Button
                           size="sm"
                           onClick={handleAddDiploma}
-                          disabled={isSaving}
+                          disabled={isSaving || isUploading || !newDiploma.file}
                           className="bg-[#5F9598] hover:bg-[#1D546D]"
                         >
-                          {isSaving ? "Enregistrement..." : "Enregistrer"}
+                          {isSaving ? "Enregistrement..." : isUploading ? "Téléchargement..." : "Enregistrer"}
                         </Button>
                       </div>
                     </div>
@@ -473,13 +531,15 @@ export function CVPageClient({
                                 className={`text-xs ${
                                   diplome.statut === "Vérifié" 
                                     ? "bg-green-50 text-green-700 border-green-200" 
+                                    : diplome.statut === "Rejeté"
+                                    ? "bg-red-50 text-red-700 border-red-200"
                                     : "bg-yellow-50 text-yellow-700 border-yellow-200"
                                 }`}
                               >
                                 {diplome.statut || "En attente"}
                               </Badge>
                               {diplome.cheminFichier && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                                   📎 Fichier joint
                                 </Badge>
                               )}
