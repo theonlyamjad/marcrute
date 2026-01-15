@@ -453,7 +453,7 @@ export default function AdminValidations() {
 
       {/* PDF Viewer Dialog with Verification */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
-        <DialogContent className="max-w-none! w-[85vw] h-[50vw] flex flex-col p-6">
+        <DialogContent className="max-w-none! w-[85vw] h-[45vw] flex flex-col p-6">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
