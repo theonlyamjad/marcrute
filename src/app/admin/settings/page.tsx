@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Shield, Bell, Lock, Database, Download, Loader2 } from 'lucide-react';
+import { Database, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Table {
@@ -116,68 +116,35 @@ export default function AdminSettings() {
     <SidebarInset>
       <div className="flex flex-1 flex-col p-6 md:p-8 space-y-6 bg-[#F3F4F4]">
         <div className="bg-[#1D546D] rounded-xl p-6 shadow-lg">
-          <h1 className="text-3xl font-bold text-white mb-2">Paramètres</h1>
-          <p className="text-[#F3F4F4] text-opacity-90">Gérer les paramètres de l&apos;administration</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Base de données</h1>
+          <p className="text-[#F3F4F4] text-opacity-90">Gérer la base de données</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="border-none shadow-lg bg-white">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-orange-500 bg-opacity-10 flex items-center justify-center">
-                  <Database className="h-6 w-6 text-orange-600" />
-                </div>
-                <div>
-                  <CardTitle>Base de données</CardTitle>
-                  <CardDescription>Gérer la base de données</CardDescription>
-                </div>
+        <Card className="border-none shadow-lg bg-white">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl bg-orange-500 bg-opacity-10 flex items-center justify-center">
+                <Database className="h-6 w-6 text-orange-600" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button variant="outline" className="w-full">
-                  Sauvegarder la base de données
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => setExportDialogOpen(true)}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Exporter les données
-                </Button>
+              <div>
+                <CardTitle>Base de données</CardTitle>
+                <CardDescription>Gérer la base de données</CardDescription>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-lg bg-white">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-purple-500 bg-opacity-10 flex items-center justify-center">
-                  <Lock className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <CardTitle>Permissions</CardTitle>
-                  <CardDescription>Gérer les permissions</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => window.location.href = '/admin/roles'}
-                >
-                  Gérer les rôles
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Historique des actions
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setExportDialogOpen(true)}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exporter les données
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Dialogue d'export */}

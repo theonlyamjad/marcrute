@@ -9,7 +9,7 @@ import {
   CheckCircle,
   Flag,
   Tag,
-  Settings,
+  Database,
   Shield,
   LogOut,
 } from "lucide-react";
@@ -52,19 +52,15 @@ const navMain = [
     icon: Tag,
   },
   {
-    title: "Rôles",
-    url: "/admin/roles",
-    icon: Shield,
-  },
-  {
-    title: "Paramètres",
+    title: "Base de données",
     url: "/admin/settings",
-    icon: Settings,
+    icon: Database,
   },
 ];
 
-export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-
+export function AdminSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -103,4 +99,3 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     </Sidebar>
   );
 }
-
