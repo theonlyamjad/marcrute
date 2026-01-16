@@ -19,72 +19,72 @@ const verifyDiplomaSchema = z.object({
 // GET ALL DIPLOMAS FOR VALIDATION
 // ========================================
 
-export async function getAllDiplomesForValidation(filters?: {
-  statut?: string;
-  regionId?: string;
-  villeId?: string;
-  specialiteId?: string;
-  search?: string;
+export async function getAllDiplomesForValidation({
+  page = 1,
+  limit = 10,
+  search = "",
+  status = "all",
+  regionId = "all",
+  specialtyId = "all",
+  villeId = "all", // 1. Added villeId to parameters
+}: {
   page?: number;
   limit?: number;
+  search?: string;
+  status?: string;
+  regionId?: string;
+  specialtyId?: string;
+  villeId?: string; // 2. Added type definition
 }) {
   try {
     await requireRole("Admin");
 
-    const page = filters?.page || 1;
-    const limit = filters?.limit || 20;
     const skip = (page - 1) * limit;
 
+    // Build the Where Clause
     const where: any = {};
 
-    // Filter by diploma status - FIXED to handle both null and "En attente" string
-    if (filters?.statut === "En attente") {
-      where.OR = [
-        { statut: null },
-        { statut: "En attente" }
-      ];
-    } else if (filters?.statut === "Vérifié") {
-      where.statut = "Vérifié";
-    } else if (filters?.statut === "Rejeté") {
-      where.statut = "Rejeté";
+    // Filter by Status
+    if (status !== "all") {
+      where.statut = status;
     }
 
-    // Filter by worker's ville or specialite
-    const travailleurWhere: any = {};
+    // Initialize travailleur filter object if it doesn't exist
+    if (!where.travailleur) where.travailleur = {};
 
-    if (filters?.villeId) {
-      travailleurWhere.idVille = filters.villeId;
-    }
-
-    // For region filter, we need to check ville's region
-    if (filters?.regionId && !filters?.villeId) {
-      travailleurWhere.ville = {
-        idRegion: filters.regionId,
+    // Filter by Search (Worker Name)
+    if (search) {
+      where.travailleur.utilisateur = {
+        nomComplet: { contains: search, mode: "insensitive" },
       };
     }
 
-    if (filters?.specialiteId) {
-      travailleurWhere.specialites = {
+    // Filter by Region (Worker -> Ville -> Region)
+    if (regionId !== "all") {
+      where.travailleur.ville = {
+        ...where.travailleur.ville,
+        idRegion: regionId,
+      };
+    }
+
+    // 3. THE FIX: Filter by City (idVille)
+    if (villeId !== "all") {
+      where.travailleur.ville = {
+        ...where.travailleur.ville,
+        idVille: villeId, // Directly filter by city ID
+      };
+    }
+
+    // Filter by Specialty Category
+    if (specialtyId !== "all") {
+      where.travailleur.specialites = {
         some: {
-          idSpecialite: filters.specialiteId,
+          idCategorie: parseInt(specialtyId),
         },
       };
     }
 
-    // Search by worker name
-    if (filters?.search) {
-      travailleurWhere.utilisateur = {
-        nomComplet: {
-          contains: filters.search,
-          mode: "insensitive" as const,
-        },
-      };
-    }
-
-    if (Object.keys(travailleurWhere).length > 0) {
-      where.travailleur = travailleurWhere;
-    }
-
+    // Execute Query
     const [diplomes, total] = await Promise.all([
       prisma.diplome.findMany({
         where,
@@ -97,76 +97,38 @@ export async function getAllDiplomesForValidation(filters?: {
                   email: true,
                 },
               },
-              ville: {
-                include: {
-                  region: {
-                    select: {
-                      nomRegion: true,
-                    },
-                  },
-                },
-              },
               specialites: {
                 include: {
-                  categorie: {
-                    select: {
-                      name: true,
-                    },
-                  },
+                  categorie: true,
                 },
-                take: 3,
+              },
+              ville: {
+                include: {
+                  region: true,
+                },
               },
             },
           },
         },
-        orderBy: {
-          dateCreation: "desc",
-        },
+        orderBy: { dateCreation: "desc" },
         skip,
         take: limit,
       }),
       prisma.diplome.count({ where }),
     ]);
 
-    const formatted = diplomes.map((d) => ({
-      idDiplome: d.idDiplome,
-      nomDiplome: d.nomDiplome,
-      nomInstitution: d.nomInstitution,
-      cheminFichier: d.cheminFichier,
-      statut: d.statut || "En attente",
-      dateCreation: d.dateCreation,
-      dateVerification: d.dateVerification,
-      travailleur: {
-        nom: d.travailleur.utilisateur.nomComplet || "Inconnu",
-        email: d.travailleur.utilisateur.email,
-        region: d.travailleur.ville?.region?.nomRegion || "Non spécifiée",
-        ville: d.travailleur.ville?.nomVille || "Non spécifiée",
-        specialites: d.travailleur.specialites.map((s) => ({
-          nom: s.nomSpecialite,
-          categorie: s.categorie?.name || "Autre",
-        })),
-      },
-    }));
-
     return {
       success: true,
-      data: formatted,
+      data: diplomes,
       pagination: {
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        pages: Math.ceil(total / limit),
+        currentPage: page,
       },
     };
   } catch (error) {
-    console.error("Error fetching diplomas:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de la récupération des diplômes",
-    };
+    console.error("Fetch Error:", error);
+    return { success: false, error: "Erreur lors du chargement des données" };
   }
 }
 
@@ -180,53 +142,34 @@ export async function getFilterOptions() {
 
     const [regions, categories] = await Promise.all([
       prisma.region.findMany({
-        select: {
-          idRegion: true,
-          nomRegion: true,
-        },
-        orderBy: {
-          nomRegion: "asc",
-        },
+        select: { idRegion: true, nomRegion: true },
+        orderBy: { nomRegion: "asc" },
       }),
+      // Querying the CategorieSpecialite table directly
       prisma.categorieSpecialite.findMany({
-        include: {
-          specialitesTravailleur: {
-            select: {
-              idSpecialite: true,
-              nomSpecialite: true,
-            },
-            distinct: ['nomSpecialite'],
-            orderBy: {
-              nomSpecialite: "asc",
-            },
-          },
+        select: {
+          id: true,    // This is the primary key in your schema
+          name: true,  // This is the VarChar(100) name in your schema
         },
-        orderBy: {
-          name: "asc",
-        },
+        orderBy: { name: "asc" },
       }),
     ]);
-
-    // Format categories with their specialties
-    const formattedCategories = categories.map((cat) => ({
-      idCategorieSpecialite: cat.id,
-      nomCategorie: cat.name,
-      specialites: cat.specialitesTravailleur,
-    }));
 
     return {
       success: true,
       data: {
         regions,
-        specialites: formattedCategories,
+        // We map 'id' to 'idSpecialite' so the frontend filter logic 
+        // doesn't need to change how it sends the ID to the search
+        specialites: categories.map(cat => ({
+          idSpecialite: cat.id.toString(), 
+          nomSpecialite: cat.name,
+        })),
       },
     };
   } catch (error) {
-    console.error("Error fetching filter options:", error);
-    return {
-      success: false,
-      error: "Erreur lors de la récupération des options de filtrage",
-    };
+    console.error("Error fetching categories:", error);
+    return { success: false, error: "Erreur" };
   }
 }
 
