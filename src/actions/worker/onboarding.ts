@@ -50,7 +50,9 @@ export async function checkOnboardingCompletion() {
       hasPassword &&
       hasPhone &&
       hasCity &&
-      (hasExperience || hasDiploma || hasSpecialty); // At least started filling profile
+      hasExperience &&  // ALL three must be present
+      hasDiploma &&
+      hasSpecialty;
 
     // For initial onboarding (strict check)
     const isFullyComplete =

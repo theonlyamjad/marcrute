@@ -1,9 +1,8 @@
 -- CreateTable
 CREATE TABLE "utilisateurs" (
-    "id_utilisateur" TEXT NOT NULL,
+    "id_utilisateur" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
-    "email_verified" TIMESTAMP(3),
-    "hash_mot_de_passe" TEXT,
+    "hash_mot_de_passe" TEXT NOT NULL,
     "role" TEXT NOT NULL,
     "nom_complet" TEXT,
     "telephone" TEXT,
@@ -14,45 +13,10 @@ CREATE TABLE "utilisateurs" (
 );
 
 -- CreateTable
-CREATE TABLE "accounts" (
-    "id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
-    "type" TEXT NOT NULL,
-    "provider" TEXT NOT NULL,
-    "provider_account_id" TEXT NOT NULL,
-    "refresh_token" TEXT,
-    "access_token" TEXT,
-    "expires_at" INTEGER,
-    "token_type" TEXT,
-    "scope" TEXT,
-    "id_token" TEXT,
-    "session_state" TEXT,
-
-    CONSTRAINT "accounts_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "sessions" (
-    "id" TEXT NOT NULL,
-    "session_token" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
-    "expires" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "sessions_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "verification_tokens" (
-    "identifier" TEXT NOT NULL,
-    "token" TEXT NOT NULL,
-    "expires" TIMESTAMP(3) NOT NULL
-);
-
--- CreateTable
 CREATE TABLE "travailleurs" (
-    "id_travailleur" TEXT NOT NULL,
-    "id_utilisateur" TEXT NOT NULL,
-    "id_ville" TEXT,
+    "id_travailleur" SERIAL NOT NULL,
+    "id_utilisateur" INTEGER NOT NULL,
+    "id_ville" INTEGER,
     "biographie" TEXT,
     "annees_experience" INTEGER,
     "statut_label" TEXT,
@@ -65,9 +29,9 @@ CREATE TABLE "travailleurs" (
 
 -- CreateTable
 CREATE TABLE "institutions" (
-    "id_institution" TEXT NOT NULL,
-    "id_utilisateur" TEXT NOT NULL,
-    "id_ville" TEXT,
+    "id_institution" SERIAL NOT NULL,
+    "id_utilisateur" INTEGER NOT NULL,
+    "id_ville" INTEGER,
     "nom_institution" TEXT NOT NULL,
     "adresse" TEXT,
     "localisation" TEXT,
@@ -81,8 +45,8 @@ CREATE TABLE "institutions" (
 
 -- CreateTable
 CREATE TABLE "administrateurs" (
-    "id_administrateur" TEXT NOT NULL,
-    "id_utilisateur" TEXT NOT NULL,
+    "id_administrateur" SERIAL NOT NULL,
+    "id_utilisateur" INTEGER NOT NULL,
     "permissions" TEXT,
     "date_creation" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -91,7 +55,7 @@ CREATE TABLE "administrateurs" (
 
 -- CreateTable
 CREATE TABLE "regions" (
-    "id_region" TEXT NOT NULL,
+    "id_region" SERIAL NOT NULL,
     "nom_region" TEXT NOT NULL,
     "date_creation" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -100,8 +64,8 @@ CREATE TABLE "regions" (
 
 -- CreateTable
 CREATE TABLE "villes" (
-    "id_ville" TEXT NOT NULL,
-    "id_region" TEXT NOT NULL,
+    "id_ville" SERIAL NOT NULL,
+    "id_region" INTEGER NOT NULL,
     "nom_ville" TEXT NOT NULL,
     "code_postal" TEXT,
     "date_creation" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -111,8 +75,8 @@ CREATE TABLE "villes" (
 
 -- CreateTable
 CREATE TABLE "experiences" (
-    "id_experience" TEXT NOT NULL,
-    "id_travailleur" TEXT NOT NULL,
+    "id_experience" SERIAL NOT NULL,
+    "id_travailleur" INTEGER NOT NULL,
     "titre_poste" TEXT,
     "organisation" TEXT,
     "description" TEXT,
@@ -125,8 +89,8 @@ CREATE TABLE "experiences" (
 
 -- CreateTable
 CREATE TABLE "diplomes" (
-    "id_diplome" TEXT NOT NULL,
-    "id_travailleur" TEXT NOT NULL,
+    "id_diplome" SERIAL NOT NULL,
+    "id_travailleur" INTEGER NOT NULL,
     "nom_diplome" TEXT NOT NULL,
     "nom_institution" TEXT,
     "chemin_fichier" TEXT,
@@ -139,8 +103,8 @@ CREATE TABLE "diplomes" (
 
 -- CreateTable
 CREATE TABLE "specialites" (
-    "id_specialite" TEXT NOT NULL,
-    "id_travailleur" TEXT NOT NULL,
+    "id_specialite" SERIAL NOT NULL,
+    "id_travailleur" INTEGER NOT NULL,
     "nom_specialite" TEXT NOT NULL,
     "niveau" TEXT,
 
@@ -149,8 +113,8 @@ CREATE TABLE "specialites" (
 
 -- CreateTable
 CREATE TABLE "disponibilites" (
-    "id_disponibilite" TEXT NOT NULL,
-    "id_travailleur" TEXT NOT NULL,
+    "id_disponibilite" SERIAL NOT NULL,
+    "id_travailleur" INTEGER NOT NULL,
     "date_disponible" DATE NOT NULL,
     "creneau" TEXT NOT NULL,
     "est_disponible" BOOLEAN NOT NULL DEFAULT true,
@@ -160,8 +124,8 @@ CREATE TABLE "disponibilites" (
 
 -- CreateTable
 CREATE TABLE "missions" (
-    "id_mission" TEXT NOT NULL,
-    "id_institution" TEXT NOT NULL,
+    "id_mission" SERIAL NOT NULL,
+    "id_institution" INTEGER NOT NULL,
     "titre" TEXT NOT NULL,
     "description" TEXT,
     "type_public" TEXT,
@@ -176,8 +140,8 @@ CREATE TABLE "missions" (
 
 -- CreateTable
 CREATE TABLE "specialites_requises" (
-    "id_specialite_requise" TEXT NOT NULL,
-    "id_mission" TEXT NOT NULL,
+    "id_specialite_requise" SERIAL NOT NULL,
+    "id_mission" INTEGER NOT NULL,
     "specialite_requise" TEXT NOT NULL,
     "annees_experience_min" INTEGER,
 
@@ -186,9 +150,9 @@ CREATE TABLE "specialites_requises" (
 
 -- CreateTable
 CREATE TABLE "candidatures" (
-    "id_candidature" TEXT NOT NULL,
-    "id_travailleur" TEXT NOT NULL,
-    "id_mission" TEXT NOT NULL,
+    "id_candidature" SERIAL NOT NULL,
+    "id_travailleur" INTEGER NOT NULL,
+    "id_mission" INTEGER NOT NULL,
     "date_candidature" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "statut" TEXT NOT NULL,
     "message_travailleur" TEXT,
@@ -199,9 +163,9 @@ CREATE TABLE "candidatures" (
 
 -- CreateTable
 CREATE TABLE "evaluations" (
-    "id_evaluation" TEXT NOT NULL,
-    "id_travailleur" TEXT NOT NULL,
-    "id_institution" TEXT NOT NULL,
+    "id_evaluation" SERIAL NOT NULL,
+    "id_travailleur" INTEGER NOT NULL,
+    "id_institution" INTEGER NOT NULL,
     "note" INTEGER NOT NULL,
     "commentaire" TEXT,
     "date_creation" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -211,11 +175,11 @@ CREATE TABLE "evaluations" (
 
 -- CreateTable
 CREATE TABLE "validations" (
-    "id_validation" TEXT NOT NULL,
-    "id_administrateur" TEXT NOT NULL,
-    "id_travailleur" TEXT,
-    "id_institution" TEXT,
-    "id_mission" TEXT,
+    "id_validation" SERIAL NOT NULL,
+    "id_administrateur" INTEGER NOT NULL,
+    "id_travailleur" INTEGER,
+    "id_institution" INTEGER,
+    "id_mission" INTEGER,
     "type_validation" TEXT NOT NULL,
     "statut" TEXT NOT NULL,
     "notes" TEXT,
@@ -226,12 +190,12 @@ CREATE TABLE "validations" (
 
 -- CreateTable
 CREATE TABLE "signalements" (
-    "id_signalement" TEXT NOT NULL,
-    "id_administrateur" TEXT,
-    "id_travailleur_emetteur" TEXT,
-    "id_institution_emetteur" TEXT,
-    "id_travailleur_concerne" TEXT,
-    "id_institution_concerne" TEXT,
+    "id_signalement" SERIAL NOT NULL,
+    "id_administrateur" INTEGER,
+    "id_travailleur_emetteur" INTEGER,
+    "id_institution_emetteur" INTEGER,
+    "id_travailleur_concerne" INTEGER,
+    "id_institution_concerne" INTEGER,
     "motif" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "statut" TEXT NOT NULL,
@@ -246,18 +210,6 @@ CREATE TABLE "signalements" (
 CREATE UNIQUE INDEX "utilisateurs_email_key" ON "utilisateurs"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "accounts_provider_provider_account_id_key" ON "accounts"("provider", "provider_account_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "sessions_session_token_key" ON "sessions"("session_token");
-
--- CreateIndex
-CREATE UNIQUE INDEX "verification_tokens_token_key" ON "verification_tokens"("token");
-
--- CreateIndex
-CREATE UNIQUE INDEX "verification_tokens_identifier_token_key" ON "verification_tokens"("identifier", "token");
-
--- CreateIndex
 CREATE UNIQUE INDEX "travailleurs_id_utilisateur_key" ON "travailleurs"("id_utilisateur");
 
 -- CreateIndex
@@ -265,12 +217,6 @@ CREATE UNIQUE INDEX "institutions_id_utilisateur_key" ON "institutions"("id_util
 
 -- CreateIndex
 CREATE UNIQUE INDEX "administrateurs_id_utilisateur_key" ON "administrateurs"("id_utilisateur");
-
--- AddForeignKey
-ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "utilisateurs"("id_utilisateur") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "utilisateurs"("id_utilisateur") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "travailleurs" ADD CONSTRAINT "travailleurs_id_utilisateur_fkey" FOREIGN KEY ("id_utilisateur") REFERENCES "utilisateurs"("id_utilisateur") ON DELETE CASCADE ON UPDATE CASCADE;
