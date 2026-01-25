@@ -8,19 +8,30 @@ export async function getCurrentUser() {
 
 export async function requireAuth() {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     // Rediriger vers la page de connexion appropriée
     // Le middleware devrait normalement gérer cela, mais on fait une double vérification
     redirect("/worker/sign-in");
   }
-  
+
   return user;
 }
 
-export async function requireRole(role: "Travailleur" | "Institution" | "Administrateur") {
-  const user = await requireAuth();
-  
+export async function requireRole(
+  role: "Travailleur" | "Institution" | "Administrateur" | "SuperAdmin",
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    // Pour les routes superadmin, rediriger vers la page d'accueil
+    if (role === "SuperAdmin") {
+      redirect("/");
+    }
+    // Pour les autres rôles, rediriger vers la page de connexion appropriée
+    redirect("/worker/sign-in");
+  }
+
   if (user.role !== role) {
     if (user.role === "Travailleur") {
       redirect("/worker/dashboard");
@@ -30,7 +41,7 @@ export async function requireRole(role: "Travailleur" | "Institution" | "Adminis
       redirect("/admin/dashboard");
     }
   }
-  
+
   return user;
 }
 

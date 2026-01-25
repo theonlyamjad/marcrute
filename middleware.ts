@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
 
   // Vérifier si la route est publique
   const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route)
+    pathname.startsWith(route),
   );
 
   if (isPublicRoute) {
@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/worker/dashboard", request.url));
     } else if (userRole === "Institution") {
       return NextResponse.redirect(
-        new URL("/enterprise/dashboard", request.url)
+        new URL("/enterprise/dashboard", request.url),
       );
     } else if (userRole === "Administrateur") {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
@@ -104,7 +104,9 @@ export async function middleware(request: NextRequest) {
 
   // Si pas de session, rediriger vers la page de connexion appropriée
   if (!session?.user) {
-    if (pathname.startsWith("/admin") || pathname.startsWith("/superadmin")) {
+    if (pathname.startsWith("/superadmin")) {
+      return NextResponse.redirect(new URL("/", request.url));
+    } else if (pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/admin/sign-in", request.url));
     } else if (pathname.startsWith("/enterprise")) {
       return NextResponse.redirect(new URL("/enterprise/sign-in", request.url));
@@ -118,21 +120,27 @@ export async function middleware(request: NextRequest) {
   // BAN CHECK - Check if user is banned
   // ========================================
   const banStatus = await checkUserBanStatus(session.user.id);
-  
+
   if (banStatus.isBanned) {
     // Redirect to appropriate sign-in page based on role
     const userRole = session.user.role;
-    
+
     if (userRole === "Administrateur") {
       // Don't ban admins (optional - remove this if you want to ban admins too)
       return NextResponse.next();
     } else if (userRole === "Institution") {
-      return NextResponse.redirect(new URL("/enterprise/sign-in?banned=true", request.url));
+      return NextResponse.redirect(
+        new URL("/enterprise/sign-in?banned=true", request.url),
+      );
     } else if (userRole === "Travailleur") {
-      return NextResponse.redirect(new URL("/worker/sign-in?banned=true", request.url));
+      return NextResponse.redirect(
+        new URL("/worker/sign-in?banned=true", request.url),
+      );
     }
-    
-    return NextResponse.redirect(new URL("/worker/sign-in?banned=true", request.url));
+
+    return NextResponse.redirect(
+      new URL("/worker/sign-in?banned=true", request.url),
+    );
   }
 
   const userRole = session.user.role;
@@ -145,7 +153,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/worker/dashboard", request.url));
       } else if (userRole === "Institution") {
         return NextResponse.redirect(
-          new URL("/enterprise/dashboard", request.url)
+          new URL("/enterprise/dashboard", request.url),
         );
       }
       return NextResponse.redirect(new URL("/admin/sign-in", request.url));
@@ -176,7 +184,7 @@ export async function middleware(request: NextRequest) {
     if (userRole !== "Travailleur") {
       if (userRole === "Institution") {
         return NextResponse.redirect(
-          new URL("/enterprise/dashboard", request.url)
+          new URL("/enterprise/dashboard", request.url),
         );
       } else if (userRole === "Administrateur") {
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));

@@ -47,8 +47,8 @@ export async function getAllUsers(filters?: {
       where.role = filters.role;
     }
 
-    // Exclure toujours les SuperAdmin de la liste pour les administrateurs normaux
-    where.NOT = { role: "SuperAdmin" };
+    // Exclure toujours les SuperAdmin et Administrateur de la liste pour les administrateurs normaux
+    where.NOT = { role: { in: ["SuperAdmin", "Administrateur"] } };
 
     const [users, total] = await Promise.all([
       prisma.utilisateur.findMany({
@@ -82,7 +82,9 @@ export async function getAllUsers(filters?: {
       telephone: u.telephone,
       role: u.role,
       dateCreation: u.dateCreation.toISOString().split("T")[0],
-      emailVerified: u.emailVerified ? u.emailVerified.toISOString().split("T")[0] : null,
+      emailVerified: u.emailVerified
+        ? u.emailVerified.toISOString().split("T")[0]
+        : null,
       travailleur: u.travailleur
         ? {
             id: u.travailleur.idTravailleur,
@@ -197,9 +199,7 @@ export async function getUserById(idUtilisateur: string) {
 // UPDATE USER
 // ========================================
 
-export async function updateUser(
-  input: z.infer<typeof updateUserSchema>
-) {
+export async function updateUser(input: z.infer<typeof updateUserSchema>) {
   try {
     await requireRole("Administrateur");
 
@@ -244,7 +244,7 @@ export async function updateUser(
 
 export async function updateUserRole(
   idUtilisateur: string,
-  newRole: "Travailleur" | "Institution" | "Administrateur"
+  newRole: "Travailleur" | "Institution" | "Administrateur",
 ) {
   try {
     await requireRole("Administrateur");
@@ -294,4 +294,3 @@ export async function deleteUser(idUtilisateur: string) {
     };
   }
 }
-
