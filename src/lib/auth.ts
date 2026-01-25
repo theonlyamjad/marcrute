@@ -18,7 +18,7 @@ export async function requireAuth() {
   return user;
 }
 
-export async function requireRole(role: "Travailleur" | "Institution" | "Admin") {
+export async function requireRole(role: "Travailleur" | "Institution" | "Administrateur") {
   const user = await requireAuth();
   
   if (user.role !== role) {
@@ -46,5 +46,5 @@ export async function isEnterprise() {
 
 export async function isAdmin() {
   const user = await getCurrentUser();
-  return user?.role === "Admin";
+  return user?.role === "Administrateur";
 }

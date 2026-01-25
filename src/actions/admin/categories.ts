@@ -24,7 +24,7 @@ const updateCategorySchema = z.object({
 
 export async function getAllCategories() {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const categories = await prisma.categorieSpecialite.findMany({
       include: {
@@ -74,7 +74,7 @@ export async function getAllCategories() {
 
 export async function getCategoryById(id: number) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const category = await prisma.categorieSpecialite.findUnique({
       where: { id },
@@ -122,7 +122,7 @@ export async function createCategory(
   input: z.infer<typeof createCategorySchema>
 ) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const validated = createCategorySchema.parse(input);
 
@@ -167,7 +167,7 @@ export async function updateCategory(
   input: z.infer<typeof updateCategorySchema>
 ) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const validated = updateCategorySchema.parse(input);
 
@@ -198,7 +198,7 @@ export async function updateCategory(
 
 export async function deleteCategory(id: number) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     // Check if category is used
     const category = await prisma.categorieSpecialite.findUnique({

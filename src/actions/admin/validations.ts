@@ -37,7 +37,7 @@ export async function getAllDiplomesForValidation({
   villeId?: string; // 2. Added type definition
 }) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const skip = (page - 1) * limit;
 
@@ -138,7 +138,7 @@ export async function getAllDiplomesForValidation({
 
 export async function getFilterOptions() {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const [regions, categories] = await Promise.all([
       prisma.region.findMany({
@@ -179,7 +179,7 @@ export async function getFilterOptions() {
 
 export async function getCitiesByRegion(regionId: string) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const villes = await prisma.ville.findMany({
       where: {
@@ -215,7 +215,7 @@ export async function verifyDiploma(
   input: z.infer<typeof verifyDiplomaSchema>
 ) {
   try {
-    const user = await requireRole("Admin");
+    const user = await requireRole("Administrateur");
 
     const validated = verifyDiplomaSchema.parse(input);
 

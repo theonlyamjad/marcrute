@@ -37,10 +37,10 @@ export function NavUser({
   const { data: session } = useSession();
 
   const handleSignOut = async () => {
-    const role = session?.user?.role || "Admin";
+    const role = session?.user?.role || "Administrateur";
     let callbackUrl = "/admin/sign-in";
     
-    if (role === "Admin") {
+    if (role === "Administrateur") {
       callbackUrl = "/admin/sign-in";
     } else if (role === "Institution") {
       callbackUrl = "/enterprise/sign-in";

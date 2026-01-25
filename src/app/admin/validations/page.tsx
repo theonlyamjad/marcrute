@@ -293,7 +293,7 @@ export default function AdminValidations() {
 
       {/* PDF Dialog remains the same */}
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
-        <DialogContent className="max-w-none! w-[90vw] h-[50vw] flex flex-col p-6">
+        <DialogContent className="max-w-none! w-[90vw] h-[45vw] flex flex-col p-6">
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-2xl text-[#1D546D]">Vérification du document</DialogTitle>
             <DialogDescription className="font-medium text-gray-600">

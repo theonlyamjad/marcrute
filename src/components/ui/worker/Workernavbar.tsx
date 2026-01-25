@@ -24,7 +24,7 @@ export function WorkerNavbar({ user }: WorkerNavbarProps) {
     const role = session?.user?.role || "Travailleur";
     let callbackUrl = "/worker/sign-in";
     
-    if (role === "Admin") {
+    if (role === "Administrateur") {
       callbackUrl = "/admin/sign-in";
     } else if (role === "Institution") {
       callbackUrl = "/enterprise/sign-in";

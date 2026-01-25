@@ -41,7 +41,7 @@ const SignInAdminPage = () => {
       const res = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
-        role: "Admin",
+        role: "Administrateur",
         redirect: false,
         callbackUrl: "/admin/dashboard",
       });

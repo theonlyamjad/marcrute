@@ -25,7 +25,7 @@ export async function getAllSignalements(filters?: {
   limit?: number;
 }) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
@@ -137,7 +137,7 @@ export async function getAllSignalements(filters?: {
 
 export async function getSignalementById(idSignalement: string) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const signalement = await prisma.signalement.findUnique({
       where: { idSignalement },
@@ -193,7 +193,7 @@ export async function updateSignalement(
   input: z.infer<typeof updateSignalementSchema>
 ) {
   try {
-    const user = await requireRole("Admin");
+    const user = await requireRole("Administrateur");
 
     const validated = updateSignalementSchema.parse(input);
 
@@ -238,7 +238,7 @@ export async function updateSignalement(
 
 export async function deleteSignalement(idSignalement: string) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     await prisma.signalement.delete({
       where: { idSignalement },

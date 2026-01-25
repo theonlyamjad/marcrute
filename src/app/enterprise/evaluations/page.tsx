@@ -11,7 +11,6 @@ interface PendingMission {
   id: string;
   idTravailleur: string;
   workerName: string;
-  workerPhoto: string;
   missionTitle: string;
   endDate: string;
 }
@@ -19,12 +18,20 @@ interface PendingMission {
 interface Evaluation {
   id: string;
   workerName: string;
-  workerPhoto: string;
   missionTitle: string;
   rating: number;
   comment: string;
   date: string;
 }
+
+// Fonction pour extraire les initiales
+const getInitials = (name: string) => {
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return parts[0].substring(0, 2).toUpperCase();
+};
 
 const Evaluations = () => {
   const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
@@ -32,6 +39,7 @@ const Evaluations = () => {
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [pending, setPending] = useState<PendingMission[]>([]);
   const [history, setHistory] = useState<Evaluation[]>([]);
+  const [filteredHistory, setFilteredHistory] = useState<Evaluation[]>([]);
   const [stats, setStats] = useState({
     averageRating: "0",
     totalEvaluations: 0,
@@ -42,6 +50,11 @@ const Evaluations = () => {
   );
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // États pour les filtres
+  const [filterRating, setFilterRating] = useState<string>("all");
+  const [filterDateFrom, setFilterDateFrom] = useState<string>("");
+  const [filterDateTo, setFilterDateTo] = useState<string>("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -54,21 +67,12 @@ const Evaluations = () => {
         ]);
 
         if (pendingResult.success && pendingResult.data) {
-          setPending(
-            pendingResult.data.map((p) => ({
-              ...p,
-              workerPhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.workerName}`,
-            }))
-          );
+          setPending(pendingResult.data);
         }
 
         if (historyResult.success && historyResult.data) {
-          setHistory(
-            historyResult.data.map((e) => ({
-              ...e,
-              workerPhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${e.workerName}`,
-            }))
-          );
+          setHistory(historyResult.data);
+          setFilteredHistory(historyResult.data);
         }
 
         if (statsResult.success && statsResult.data) {
@@ -84,6 +88,34 @@ const Evaluations = () => {
 
     loadData();
   }, []);
+
+  // Appliquer les filtres
+  useEffect(() => {
+    let filtered = [...history];
+
+    // Filtre par note
+    if (filterRating !== "all") {
+      if (filterRating === "5") {
+        filtered = filtered.filter((e) => e.rating === 5);
+      } else if (filterRating === "4-5") {
+        filtered = filtered.filter((e) => e.rating >= 4);
+      } else if (filterRating === "1-3") {
+        filtered = filtered.filter((e) => e.rating < 4);
+      }
+    }
+
+    // Filtre par date (from)
+    if (filterDateFrom) {
+      filtered = filtered.filter((e) => e.date >= filterDateFrom);
+    }
+
+    // Filtre par date (to)
+    if (filterDateTo) {
+      filtered = filtered.filter((e) => e.date <= filterDateTo);
+    }
+
+    setFilteredHistory(filtered);
+  }, [filterRating, filterDateFrom, filterDateTo, history]);
 
   const handleSubmitEvaluation = async () => {
     if (!selectedMission || rating === 0) {
@@ -103,29 +135,30 @@ const Evaluations = () => {
       setComment("");
       setSelectedMission(null);
       // Recharger les données
-      const [pendingResult, historyResult] = await Promise.all([
+      const [pendingResult, historyResult, statsResult] = await Promise.all([
         getPendingEvaluations(),
         getEvaluationsHistory(),
+        getEvaluationStats(),
       ]);
       if (pendingResult.success && pendingResult.data) {
-        setPending(
-          pendingResult.data.map((p) => ({
-            ...p,
-            workerPhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.workerName}`,
-          }))
-        );
+        setPending(pendingResult.data);
       }
       if (historyResult.success && historyResult.data) {
-        setHistory(
-          historyResult.data.map((e) => ({
-            ...e,
-            workerPhoto: `https://api.dicebear.com/7.x/avataaars/svg?seed=${e.workerName}`,
-          }))
-        );
+        setHistory(historyResult.data);
+        setFilteredHistory(historyResult.data);
+      }
+      if (statsResult.success && statsResult.data) {
+        setStats(statsResult.data);
       }
     } else {
       toast.error(result.error || "Erreur lors de la soumission");
     }
+  };
+
+  const resetFilters = () => {
+    setFilterRating("all");
+    setFilterDateFrom("");
+    setFilterDateTo("");
   };
 
   return (
@@ -185,7 +218,7 @@ const Evaluations = () => {
                   : "text-gray-400"
               }`}
             >
-              HISTORIQUE
+              HISTORIQUE ({history.length})
             </button>
           </div>
 
@@ -212,11 +245,9 @@ const Evaluations = () => {
                       onClick={() => setSelectedMission(mission)}
                     >
                       <div className="flex items-center gap-3">
-                        <img
-                          src={mission.workerPhoto}
-                          className="w-10 h-10 rounded-full bg-gray-200"
-                          alt=""
-                        />
+                        <div className="w-10 h-10 rounded-full bg-[#5F9598] flex items-center justify-center text-white font-bold text-sm">
+                          {getInitials(mission.workerName)}
+                        </div>
                         <div>
                           <p className="font-bold text-[#061E29] text-sm">
                             {mission.workerName}
@@ -294,17 +325,52 @@ const Evaluations = () => {
           {activeTab === "history" && (
             <div className="space-y-6 animate-in fade-in duration-500">
               {/* Filtres Historique */}
-              <div className="flex gap-4 items-center bg-[#F3F4F4]/30 p-4 rounded-xl">
+              <div className="flex flex-wrap gap-4 items-center bg-[#F3F4F4]/30 p-4 rounded-xl">
                 <Filter size={18} className="text-gray-400" />
-                <select className="bg-transparent text-sm font-medium outline-none">
-                  <option>Toutes les notes</option>
-                  <option>5 étoiles</option>
-                  <option>Moins de 3 étoiles</option>
+                
+                <select 
+                  className="bg-white border rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-[#5F9598]"
+                  value={filterRating}
+                  onChange={(e) => setFilterRating(e.target.value)}
+                >
+                  <option value="all">Toutes les notes</option>
+                  <option value="5">5 étoiles</option>
+                  <option value="4-5">4-5 étoiles</option>
+                  <option value="1-3">Moins de 4 étoiles</option>
                 </select>
-                <input
-                  type="date"
-                  className="bg-transparent text-sm font-medium outline-none border-l pl-4 ml-2"
-                />
+
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-500">Du:</label>
+                  <input
+                    type="date"
+                    className="bg-white border rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-[#5F9598]"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-500">Au:</label>
+                  <input
+                    type="date"
+                    className="bg-white border rounded-lg px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-[#5F9598]"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                  />
+                </div>
+
+                {(filterRating !== "all" || filterDateFrom || filterDateTo) && (
+                  <button
+                    onClick={resetFilters}
+                    className="text-xs font-bold text-[#5F9598] hover:underline ml-auto"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+
+                <div className="text-xs text-gray-500 ml-auto">
+                  {filteredHistory.length} résultat{filteredHistory.length > 1 ? 's' : ''}
+                </div>
               </div>
 
               {/* Liste des évaluations */}
@@ -313,18 +379,16 @@ const Evaluations = () => {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-[#1D546D]" />
                   </div>
-                ) : history.length > 0 ? (
-                  history.map((evalItem) => (
+                ) : filteredHistory.length > 0 ? (
+                  filteredHistory.map((evalItem) => (
                     <div
                       key={evalItem.id}
                       className="p-6 border rounded-2xl flex flex-col md:flex-row gap-6 hover:shadow-sm transition-all"
                     >
                       <div className="md:w-1/4 flex items-start gap-4">
-                        <img
-                          src={evalItem.workerPhoto}
-                          className="w-12 h-12 rounded-xl"
-                          alt=""
-                        />
+                        <div className="w-12 h-12 rounded-xl bg-[#5F9598] flex items-center justify-center text-white font-bold">
+                          {getInitials(evalItem.workerName)}
+                        </div>
                         <div>
                           <p className="font-bold text-[#061E29]">
                             {evalItem.workerName}
@@ -350,7 +414,7 @@ const Evaluations = () => {
                           ))}
                         </div>
                         <p className="text-sm text-gray-600 italic">
-                          &quot;{evalItem.comment}&quot;
+                          &quot;{evalItem.comment || "Aucun commentaire"}&quot;
                         </p>
                       </div>
 
@@ -363,7 +427,7 @@ const Evaluations = () => {
                   ))
                 ) : (
                   <p className="text-center text-[#5F9598] py-8">
-                    Aucune évaluation dans l&apos;historique
+                    Aucune évaluation ne correspond aux filtres
                   </p>
                 )}
               </div>

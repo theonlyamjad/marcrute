@@ -40,7 +40,7 @@ export function useBanCheck() {
           
           if (role === "Institution") {
             redirectUrl = "/enterprise/sign-in?banned=true";
-          } else if (role === "Admin") {
+          } else if (role === "Administrateur") {
             redirectUrl = "/admin/sign-in?banned=true";
           } else if (role === "Travailleur") {
             redirectUrl = "/worker/sign-in?banned=true";

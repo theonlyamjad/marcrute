@@ -14,7 +14,7 @@ const updateUserSchema = z.object({
   nomComplet: z.string().optional(),
   email: z.string().email().optional(),
   telephone: z.string().optional(),
-  role: z.enum(["Travailleur", "Institution", "Admin"]).optional(),
+  role: z.enum(["Travailleur", "Institution", "Administrateur"]).optional(),
 });
 
 // ========================================
@@ -28,7 +28,7 @@ export async function getAllUsers(filters?: {
   limit?: number;
 }) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
@@ -46,6 +46,9 @@ export async function getAllUsers(filters?: {
     if (filters?.role) {
       where.role = filters.role;
     }
+
+    // Exclure toujours les SuperAdmin de la liste pour les administrateurs normaux
+    where.NOT = { role: "SuperAdmin" };
 
     const [users, total] = await Promise.all([
       prisma.utilisateur.findMany({
@@ -128,7 +131,7 @@ export async function getAllUsers(filters?: {
 
 export async function getUserById(idUtilisateur: string) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const user = await prisma.utilisateur.findUnique({
       where: { idUtilisateur },
@@ -198,7 +201,7 @@ export async function updateUser(
   input: z.infer<typeof updateUserSchema>
 ) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const validated = updateUserSchema.parse(input);
 
@@ -241,10 +244,10 @@ export async function updateUser(
 
 export async function updateUserRole(
   idUtilisateur: string,
-  newRole: "Travailleur" | "Institution" | "Admin"
+  newRole: "Travailleur" | "Institution" | "Administrateur"
 ) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     await prisma.utilisateur.update({
       where: { idUtilisateur },
@@ -272,7 +275,7 @@ export async function updateUserRole(
 
 export async function deleteUser(idUtilisateur: string) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     await prisma.utilisateur.delete({
       where: { idUtilisateur },

@@ -275,33 +275,6 @@ const CandidatureCard: React.FC<{
               <p className="text-sm text-[#1D546D]">{candidature.messageReponse}</p>
             </div>
           )}
-
-          {/* Actions */}
-          <div className="pt-4 border-t border-[#5F9598] border-opacity-20 flex gap-3 flex-wrap">
-            <Button
-              onClick={onViewProfile}
-              variant="outline"
-              className="border-[#1D546D] text-[#1D546D] hover:bg-[#1D546D] hover:text-white"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Voir profil complet
-            </Button>
-            
-            {candidature.statut === 'En attente' && (
-              <>
-                <ResponseDialog
-                  type="accept"
-                  candidature={candidature}
-                  onConfirm={onAccept}
-                />
-                <ResponseDialog
-                  type="reject"
-                  candidature={candidature}
-                  onConfirm={onReject}
-                />
-              </>
-            )}
-          </div>
         </div>
       </CardContent>
     </Card>

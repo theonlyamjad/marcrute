@@ -39,7 +39,7 @@ export async function signUpAdminAction(
         email,
         hashMotDePasse: hashedPassword,
         nomComplet: fullName,
-        role: "Admin",
+        role: "Administrateur",
         emailVerified: null,
       },
     });

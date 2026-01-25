@@ -77,7 +77,7 @@ export const authOptions: NextAuthConfig = {
           throw new Error("Identifiants invalides");
         }
 
-        if (user.role !== credentials.role) {
+        if (user.role !== credentials.role && !(credentials.role === "Administrateur" && user.role === "SuperAdmin")) {
           throw new Error("Accès interdit pour ce rôle");
         }
 

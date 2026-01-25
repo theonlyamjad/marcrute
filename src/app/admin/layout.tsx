@@ -7,7 +7,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }>) {
   // Vérifier que l'utilisateur est un administrateur
-  await requireRole("Admin");
+  await requireRole("Administrateur");
 
   return <AdminLayoutClient>{children}</AdminLayoutClient>;
 }

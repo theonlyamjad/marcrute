@@ -9,7 +9,7 @@ import { requireRole } from "@/lib/auth";
 
 export async function getAdminDashboardStats() {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     // Statistiques globales
     const totalUsers = await prisma.utilisateur.count();
@@ -84,7 +84,7 @@ export async function getAdminDashboardStats() {
 
 export async function getUsersGrowthTrend() {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const months = [];
     const now = new Date();
@@ -146,7 +146,7 @@ export async function getUsersGrowthTrend() {
 
 export async function getSignalementsStatus() {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const enAttente = await prisma.signalement.count({
       where: {
@@ -192,7 +192,7 @@ export async function getSignalementsStatus() {
 
 export async function getRecentSignalements(limit: number = 10) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const signalements = await prisma.signalement.findMany({
       include: {
@@ -266,7 +266,7 @@ export async function getRecentSignalements(limit: number = 10) {
 
 export async function getRecentValidations(limit: number = 10) {
   try {
-    await requireRole("Admin");
+    await requireRole("Administrateur");
 
     const validations = await prisma.validation.findMany({
       include: {

@@ -144,7 +144,7 @@ export async function checkUserBanStatus(idUtilisateur: string) {
 
 export async function createBan(input: z.infer<typeof createBanSchema>) {
   try {
-    const user = await requireRole("Admin");
+    const user = await requireRole("Administrateur");
 
     // Get admin ID
     const admin = await prisma.administrateur.findUnique({
