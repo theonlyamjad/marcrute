@@ -1,6 +1,18 @@
 "use client";
 import React, { useState } from "react";
-import { UserPlus, Mail, Phone, User, Shield, Save, X, Loader2, Lock, Eye, EyeOff } from "lucide-react";
+import {
+  UserPlus,
+  Mail,
+  Phone,
+  User,
+  Shield,
+  Save,
+  X,
+  Loader2,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const CreateAdmin = () => {
@@ -16,13 +28,20 @@ const CreateAdmin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async () => {
-    if (!formData.email || !formData.prenom || !formData.nom || !formData.password) {
+    if (
+      !formData.email ||
+      !formData.prenom ||
+      !formData.nom ||
+      !formData.password
+    ) {
       toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
@@ -204,7 +223,8 @@ const CreateAdmin = () => {
             <div>
               <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
                 <Lock size={16} className="text-[#5F9598]" />
-                Confirmer le mot de passe <span className="text-red-500">*</span>
+                Confirmer le mot de passe{" "}
+                <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -220,7 +240,11 @@ const CreateAdmin = () => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showConfirmPassword ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
                 </button>
               </div>
             </div>
@@ -267,9 +291,15 @@ const CreateAdmin = () => {
               </h3>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Le mot de passe doit contenir au moins 6 caractères</li>
-                <li>• L&apos;administrateur pourra modifier son mot de passe après connexion</li>
+                <li>
+                  • L&apos;administrateur pourra modifier son mot de passe après
+                  connexion
+                </li>
                 <li>• Les permissions peuvent être modifiées ultérieurement</li>
-                <li>• Seul un Super Admin peut créer ou supprimer des administrateurs</li>
+                <li>
+                  • Seul un Super Admin peut créer ou supprimer des
+                  administrateurs
+                </li>
               </ul>
             </div>
           </div>

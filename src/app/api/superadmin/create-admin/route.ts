@@ -9,10 +9,7 @@ export async function POST(req: NextRequest) {
     const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Non authentifié" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
     // Vérifier que l'utilisateur est un SuperAdmin
@@ -23,32 +20,33 @@ export async function POST(req: NextRequest) {
     if (!superAdmin) {
       return NextResponse.json(
         { error: "Accès refusé. Vous devez être Super Admin." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     // Récupérer les données du formulaire
-    const { email, prenom, nom, telephone, password, confirmPassword } = await req.json();
+    const { email, prenom, nom, telephone, password, confirmPassword } =
+      await req.json();
 
     // Validation
     if (!email || !prenom || !nom || !password || !confirmPassword) {
       return NextResponse.json(
         { error: "Tous les champs sont obligatoires" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Le mot de passe doit contenir au moins 6 caractères" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (password !== confirmPassword) {
       return NextResponse.json(
         { error: "Les mots de passe ne correspondent pas" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,7 +58,7 @@ export async function POST(req: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: "Cet email est déjà utilisé" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -107,7 +105,7 @@ export async function POST(req: NextRequest) {
     console.error("Erreur lors de la création de l'admin:", error);
     return NextResponse.json(
       { error: "Erreur serveur lors de la création" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
