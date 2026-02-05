@@ -276,7 +276,10 @@ export default function AdminValidations() {
                         className="bg-[#1D546D]/5 text-[#1D546D] hover:bg-[#1D546D] hover:text-white transition-all font-bold text-xs"
                         onClick={() => {
                           setSelectedDiploma(diplome);
-                          setPdfUrl(diplome.cheminFichier);
+                          // Utiliser l'API pour servir le PDF (gère base64 et fichiers publics)
+                          setPdfUrl(diplome.cheminFichier 
+                            ? `/api/admin/diplomas/${diplome.idDiplome}/view`
+                            : "");
                           setPdfDialogOpen(true);
                         }}
                       >
