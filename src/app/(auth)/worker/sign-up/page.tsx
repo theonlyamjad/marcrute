@@ -76,9 +76,7 @@ const SignupPage = () => {
     setIsLoading(false)
   }
 
-  const handleGoogleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/worker/dashboard" })
-  }
+
 
 return (
   <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
