@@ -275,6 +275,31 @@ const CandidatureCard: React.FC<{
               <p className="text-sm text-[#1D546D]">{candidature.messageReponse}</p>
             </div>
           )}
+          {candidature.statut === 'En attente' && (
+            <div className="mt-4 flex items-center justify-between pt-4 border-t border-gray-100">
+              <Button
+                variant="outline"
+                className="border-[#5F9598] text-[#1D546D]"
+                onClick={onViewProfile}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Voir le profil
+              </Button>
+
+              <div className="flex gap-2">
+                <ResponseDialog
+                  type="accept"
+                  candidature={candidature}
+                  onConfirm={onAccept}
+                />
+                <ResponseDialog
+                  type="reject"
+                  candidature={candidature}
+                  onConfirm={onReject}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -564,6 +589,7 @@ const Candidature: React.FC = () => {
                   <CardContent className="py-12 text-center">
                     <p className="text-[#5F9598] text-lg">Aucune candidature</p>
                   </CardContent>
+                  
                 </Card>
               )}
             </TabsContent>
