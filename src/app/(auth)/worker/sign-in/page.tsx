@@ -118,9 +118,6 @@ const SignInPage = () => {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    await signIn("google", { callbackUrl: "/worker/dashboard" })
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -194,11 +191,6 @@ const SignInPage = () => {
                   >
                     {isLoading ? "Connexion..." : "Se connecter"}
                   </Button>
-
-                  <OAuth
-                    text_1="Continuer avec Google"
-                    onGoogleClick={handleGoogleSignIn}
-                  />
 
                   <p className="text-center text-sm text-gray-600">
                     Vous n&apos;avez pas de compte ?{" "}

@@ -167,11 +167,6 @@ return (
                   {isLoading ? "Création..." : "Créer mon compte"}
                 </Button>
 
-                <OAuth
-                  text_1="S'inscrire avec Google"
-                  onGoogleClick={handleGoogleSignIn}
-                />
-
                 <p className="text-center text-sm text-gray-600">
                   Déjà inscrit ?{" "}
                   <Link
